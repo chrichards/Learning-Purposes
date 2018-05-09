@@ -414,8 +414,8 @@ Function DescriptionPrompt {
 # Function: gets a computername for a specific username
 Function GetSCCMComputer {
 Param($SamAccountName)
-    $SiteName="EH1"
-    $SCCMServer="sjpritscm01.ehi.ehealth.com"
+    $SiteName="[site code]"
+    $SCCMServer="[FQDN of MP]"
     $SCCMNameSpace="root\sms\site_$SiteName"
     $global:users_computername = (Get-WmiObject -namespace $SCCMNameSpace -computer $SCCMServer -query "select Name from sms_r_system where LastLogonUserName='$SamAccountName'").Name
 }
