@@ -27,7 +27,7 @@ If($IP -like “10.43.*”){ $local = “10090” }
 If($IP -like “10.54.*”){ $local = “10100” }
 
 # Define browser object
-$website = "https://jira.ehealthinsurance.com/secure/Dashboard.jspa"
+$website = "https://jira.somecompany.com/secure/Dashboard.jspa"
 $browser = New-Object -ComObject "InternetExplorer.Application"
 
 # Function: Prompt for user's credentials
