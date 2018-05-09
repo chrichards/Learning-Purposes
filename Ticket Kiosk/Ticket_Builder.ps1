@@ -544,7 +544,7 @@ Do{
         # Login retry
         CredentialPrompt
             # Re-define browser object
-            $website = "https://jira.ehealthinsurance.com/secure/Dashboard.jspa"
+            $website = "https://jira.somecompany.com/secure/Dashboard.jspa"
             $browser = New-Object -ComObject "InternetExplorer.Application"
             
             # Open browser and wait for it to load    
