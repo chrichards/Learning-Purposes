@@ -127,7 +127,7 @@ Function CloseChromePrompt {
     $form.Add_Shown({$form.Activate()})
     $result = $form.ShowDialog()
 
-    If($result -eq [System.Windows.Forms.DialogResult]::Yes){Get-Process | Where{$_.name -match "Chrome"} | Stop-Process}
+    If($result -eq [System.Windows.Forms.DialogResult]::Yes){Get-Process | Where{$_.name -match "Chrome"} | Stop-Process -Force}
     If($result -eq [System.Windows.Forms.DialogResult]::No){ Exit }
     If($result -eq [System.Windows.Forms.DialogResult]::Cancel){ Exit }
 }
@@ -292,7 +292,7 @@ Function InstallWait {
                     Else{$complete = $true}
                 }
             }Until($complete -eq $true)
-            Get-Process | Where{$_.name -match "chrome"} | Stop-Process
+            Get-Process | Where{$_.name -match "chrome"} | Stop-Process -Force
             Remove-Item -Path "C:\Windows\System32\Tasks\TEMP" -Force
             $done = $true
         }
