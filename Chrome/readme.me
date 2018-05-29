@@ -1,9 +1,16 @@
 The 'Install_Extensions.ps1' script works with a CSV file. The format of that file is:
-- Headers
-* Key
-* Extension
-- Data
-* Chrome Extension ID (e.g. efaidnbmnnnibpcajpcglclefindmkaj)
-* Extension Name (e.g. Adobe Acrobat)
+  - Headers
+    * Key
+    * Extension
+  - Data
+    * Chrome Extension ID (e.g. efaidnbmnnnibpcajpcglclefindmkaj)
+    * Extension Name (e.g. Adobe Acrobat)
 
 See 'example.csv'
+
+
+Update 1: Added more functionality to the script
+  - Uninstall capability
+  - Allow extensions to actively install (in user context)
+  - Wait loops (for extension install/uninstall)
+  - Status prompts
