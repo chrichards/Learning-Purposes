@@ -21,9 +21,13 @@ $script:install = $null
 
 # Check what extensions are already installed
 # Script runs as system, so $env:LocalAppData cannot be used
+# Convert username to SID and find LocalAppData in registry
+New-PSDrive -PSProvider Registry -Root HKEY_USERS -Name HKU
 $script:username = (Get-Process -IncludeUserName | Where{$_.name -match "explorer"}).UserName
-$username_clean = $username.Replace("[domain]\","")
-$user_appdata = "C:\users\$username_clean\AppData\Local"
+$AD_Object = New-Object System.Security.Principal.NTAccount($username)
+$User_SID = ($AD_Object.Translate([System.Security.Principal.SecurityIdentifier])).Value
+$user_appdata = Get-ItemProperty -Path "HKU:\$User_SID\Software\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" | Get-ItemPropertyValue -Name "Local AppData"
+
 $script:user_extensions = "$user_appdata\Google\Chrome\User Data\Default\Extensions"
 
 If(Test-Path $user_extensions){
@@ -254,7 +258,7 @@ Function ScheduleChrome {
     $Task.Settings.AllowDemandStart = $true
 
     $trigger = $task.triggers.Create(1)
-    $addtime = (Get-Date).AddSeconds(5).ToString("yyyy-MM-ddTHH:mm:ss")
+    $addtime = (Get-Date).AddSeconds(4).ToString("yyyy-MM-ddTHH:mm:ss")
     $trigger.StartBoundary = $addtime
     $trigger.Enabled = $true
 
@@ -267,36 +271,65 @@ Function ScheduleChrome {
     $taskFolder.RegisterTaskDefinition('TEMP', $Task , 6, $user, $null, 0)
 }
 
-# Function: Wait for all extensions to be installed
+# Function: Wait for all extensions to be installed w/wait screen
 Function InstallWait {
     Param([boolean]$Install)
 
+    Add-Type -AssemblyName System.Windows.Forms
+    Add-Type -AssemblyName System.Drawing
+
+    $form = New-Object System.Windows.Forms.Form 
+    $form.Text = "Please wait..."
+    $form.Size = New-Object System.Drawing.Size(300,125) 
+    $form.StartPosition = "CenterScreen"
+    $form.FormBorderStyle = 'Fixed3D'
+    $form.MaximizeBox = $false
+    $form.MinimizeBox = $false
+    $form.ControlBox = $false
+
+    $label = New-Object System.Windows.Forms.Label 
+    $label.Size = New-Object System.Drawing.Size(250,40) 
+    $label.Location = New-Object System.Drawing.Point(15,20)
+    $label.Text = "Please wait while your Chrome extensions are configured..."
+    $form.Controls.Add($label)
+
+    $form.Topmost = $True
+    $form.Add_Shown({$form.Activate()})
+    $form.Show()
+
     If($Install -eq $true){$installed_number = 0;$goal = $Translated.Count}
     If($Install -eq $false){$installed_number = $Translated.Count;$goal = 0}
+    $i = 0
     Do{
         $path_names = (Get-ChildItem -Path $user_extensions).Name
         If($installed_number -ne $goal){
-            ForEach($extension in $path_names){
-                If($extension -in $Translated){
-                    If($Install -eq $true){$installed_number++}
-                    If($install -eq $false){$installed_number--}
-                    $Translated = ($Translated -replace $extension,'')
+            If($Install -eq $true){
+                ForEach($extension in $path_names){
+                    If($extension -in $Translated){$installed_number++;$Translated = ($Translated -replace $extension,'')}
+                    Else{Start-Sleep -Milliseconds 200}
                 }
-                Else{Start-Sleep -Milliseconds 100}
+            }
+            If($Install -eq $false){
+                If($Translated[$i] -in $path_names){Start-Sleep -Milliseconds 200}
+                Else{$installed_number--;$i++}
             }
         }
         Else{
-            Do{
-                ForEach($extension in $path_names){
-                    If($extension -eq 'Temp'){Start-Sleep -Milliseconds 100}
-                    Else{$complete = $true}
-                }
-            }Until($complete -eq $true)
+            If($Install -eq $true){
+                Do{
+                    $ready = $true
+                    $path_names = (Get-ChildItem -Path $user_extensions).Name
+                    ForEach($extension in $path_names){
+                        If($extension -eq "Temp"){Start-Sleep -Milliseconds 200; $ready = $false}
+                    }
+                }While($ready -eq $false)
+            }
             Get-Process | Where{$_.name -match "chrome"} | Stop-Process -Force
             Remove-Item -Path "C:\Windows\System32\Tasks\TEMP" -Force
             $done = $true
         }
     }Until($done -eq $true)
+    $form.Close()
 }
 
 # Function: Look through the registry path for missing keys or matching values and create keys
@@ -356,8 +389,10 @@ Function KeyWrite {
         Else{
             $LastValue = $LastValue + 1
             ForEach($Item in $Translated){
-                If($Force -eq $true){$Item = $Item+$Google_Install}
-                New-ItemProperty -Path $RegPath -Name $LastValue -Value $Item; $LastValue++
+                If($Item -ne ''){
+                    If($Force -eq $true){$Item = $Item+$Google_Install}
+                    New-ItemProperty -Path $RegPath -Name $LastValue -Value $Item; $LastValue++
+                }
             }
         }
     }
@@ -378,7 +413,10 @@ Function KeyRemove {
             $Compare = Get-ItemPropertyValue -Path $RegPath -Name $Value
             If($Force -eq $true){$Compare = $Compare -replace $Google_Install,''}
             If($Compare -in $Translated){Remove-ItemProperty -Path $RegPath -Name $Value}
-            Else{$AddExtensionsBack += ($Compare+$Google_Install)}
+            Else{
+                If($Force -eq $true){$AddExtensionsBack += ($Compare+$Google_Install)}
+                If($Force -eq $false){$AddExtensionsBack += $Compare}
+            }
         }
 
         # Re-get all the values in the reg key
