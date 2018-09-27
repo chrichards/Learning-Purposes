@@ -489,7 +489,7 @@ Function ProcessData {
 
                         If(Test-Path "$user_log_directory\Edge-Advanced"){
                             Try{
-                                Copy-Item -Path "$user\$edge_advanced_logs" -Destination "$user_log_directory\Edge-Advanced" -Force -Verbose -Recurse -ErrorAction Stop
+                                Copy-Item -Path "$user\$edge_advanced_logs\*" -Destination "$user_log_directory\Edge-Advanced" -Force -Verbose -Recurse -ErrorAction Stop
                                 Textbox_Output -Message "`t`t`tSuccess!"
                             }
                             Catch{Textbox_Output -Message $_.Exception.Message}
