@@ -8,7 +8,7 @@ Param(
 
 ##################### Hyper-V #####################
 # Find the ethernet adapter
-$wired = Get-NetAdapter | Where{($_.Name -like "*Ethernet*") -and ($_.InterfaceDescription -notlike "Hyper-V*")}
+$wired = Get-NetAdapter -Physical | Where{$_.Name -like "*Ethernet*"}
 Write-Host "Will use $wired for VM networking."
 
 # Create a new Virtual Switch
@@ -26,7 +26,7 @@ Write-Host "Creating a virtual hardk disk for the VM to use..."
 $path = "$env:PUBLIC\Documents\Hyper-V\Virtual hard disks"
 Try{New-VHD -Path "$path\OS.vhdx" -Dynamic -SizeBytes 50GB | 
     Mount-VHD -Passthru | Initialize-Disk -Passthru | 
-    New-Partition -AssignDriveLetter -UserMaximumSize | Format-Volume -FileSystem NTFS -Confirm:$false -Force
+    New-Partition -AssignDriveLetter -UseMaximumSize | Format-Volume -FileSystem NTFS -Confirm:$false -Force
 }
 Catch{$_.Exception.Message;Break}
 Write-Host "Virtual hard disk created."
