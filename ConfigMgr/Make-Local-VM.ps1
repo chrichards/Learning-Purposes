@@ -52,15 +52,16 @@ Write-Host "VM will use the following MAC address: $properMAC"
 # All other VM parameters
 $vm = @{
     Name = $vmName
-    MemoryStartupBytes = "$($half)GB"
+    MemoryStartupBytes = ($half * 1GB)
     Generation = 2
     VHDPath = "$path\OS.vhdx"
     BootDevice = "NetworkAdapter"
     SwitchName = (Get-VMSwitch | Where{$_.Name -eq "Primary"}).Name
+    ErrorAction = Stop
 }
 
 # Begin VM creation process
-Try{New-VM $vm -ErrorAction Stop}
+Try{New-VM @vm}
 Catch{$_.Exception.Message;Break}
 Write-Host "$vmName has been created successfully."
 
