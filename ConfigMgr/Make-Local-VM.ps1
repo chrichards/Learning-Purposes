@@ -20,7 +20,7 @@ Write-Host "New switch 'Primary' has been created."
 $bytes = (Get-WMIObject -Class win32_LogicalDisk -Filter "DeviceID='C:'").FreeSpace
 $gigabytes = ($bytes/1073741824)
 If($gigabytes -lt 55){Write-Host "Not enough space on disk for VM.";Break}
-Write-Host "Creating a virtual hardk disk for the VM to use..."
+Write-Host "Creating a virtual hard disk for the VM to use..."
 
 # Make a VHDX
 $path = "$env:PUBLIC\Documents\Hyper-V\Virtual hard disks"
@@ -30,6 +30,10 @@ Try{New-VHD -Path "$path\OS.vhdx" -Dynamic -SizeBytes 50GB |
 }
 Catch{$_.Exception.Message;Break}
 Write-Host "Virtual hard disk created."
+
+Try{Dismount-VHD -Path "$path\OS.vhdx" -ErrorAction Stop}
+Catch{$_.Exception.Message;Break}
+Write-Host "Virtual hard disk dismounted successfully."
 
 # Calculate half of all available RAM that can be assigned to the VM
 $bytes = (Get-WMIObject -Class win32_ComputerSystem).TotalPhysicalMemory
@@ -57,23 +61,22 @@ $vm = @{
     VHDPath = "$path\OS.vhdx"
     BootDevice = "NetworkAdapter"
     SwitchName = (Get-VMSwitch | Where{$_.Name -eq "Primary"}).Name
-    ErrorAction = Stop
 }
 
 # Begin VM creation process
-Try{New-VM @vm}
+Try{New-VM @vm -ErrorAction Stop}
 Catch{$_.Exception.Message;Break}
 Write-Host "$vmName has been created successfully."
 
-Try{Set-VM -Name $vmName -StaticMemory -ProcessorCount 1 -ErrorAction Stop}
+Try{Set-VM -VMName $vmName -StaticMemory -ProcessorCount 1 -ErrorAction Stop}
 Catch{$_.Exception.Message;Break}
 Write-Host "$vmName has been set to 'Static Memory' successfully."
 
-Try{Set-VMFirmware -Name $vmName -EnableSecureBoot Off -ErrorAction Stop}
+Try{Set-VMFirmware -VMName $vmName -EnableSecureBoot Off -ErrorAction Stop}
 Catch{$_.Exception.Message;Break}
 Write-Host "'SecureBoot' has been disabled successfully."
 
-Try{Set-VMNetworkAdapter -Name $vmName -StaticMacAddress $vmMAC -ErrorAction Stop}
+Try{Set-VMNetworkAdapter -VMName $vmName -StaticMacAddress $vmMAC -ErrorAction Stop}
 Catch{$_.Exception.Message;Break}
 Write-Host "$vmName has been assigned its MAC address successfully."
 
