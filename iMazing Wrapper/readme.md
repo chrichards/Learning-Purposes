@@ -10,3 +10,5 @@ utility was to allow a user to backup their device without ever having to intera
 will not auto-launch when a device is plugged in by eliminating the iTunesHelper.exe file. It also adjusts an iTunes service, enabling
 the user to stop/start the process (by way of copying the Windows service spooler's ACL). Finally, it creates a service using srvany.exe,
 which can be found in the Windows NT 4.0 Resource Kit, to launch a required iTunes exe as 'SYSTEM'. 
+
+As an aside for the backup script: there are bits where 'stop-process -id $PID' are called. It's not in any way, shape, or form the correct way of disposing of the app, but I couldn't figure out how to get the script to exit properly (since the script was wrapped up using PS2EXE, with some really nifty c# magic).
