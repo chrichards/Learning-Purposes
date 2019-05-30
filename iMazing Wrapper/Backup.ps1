@@ -1,11 +1,24 @@
 # iMazing utility location
 $script:imazing = "$env:ProgramFiles\DigiDNA\iMazing-CLI\iMazing-CLI.exe"
-$script:ours = "<password here>"
-$script:share = '<server here>'
+$script:ours = "SomePassword"
+$script:share = '\\server\backups$'
 
 # Enable WPF
-Add-Type -AssemblyName PresentationFramework
+Add-Type -AssemblyName PresentationCore,PresentationFramework
 
+# Make sure this is the only instance running
+$process = get-process '<Company> iOS Archive Utility' -erroraction silentlycontinue
+if($process.Count -gt 1){
+    $button = [System.Windows.MessageBoxButton]::OK
+    $icon = [System.Windows.MessageBoxImage]::Information
+    $body = "The iOS archive utility is already running."
+    $title = "<Company> iOS Archive Utility"
+ 
+    [System.Windows.MessageBox]::Show($body,$title,$button,$icon)
+    Exit
+}
+
+# Begin function blocks
 Function Get-Segment {
     Param(
         [Parameter(Mandatory=$true)]
@@ -27,11 +40,11 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="250" Width="270" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="250" Width="270" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas>
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="40" Width="225" Height="75" TextWrapping="Wrap">
-                                You are about to run the [company] iOS backup utility.<LineBreak/>
+                                You are about to run the <Company> iOS archive utility.<LineBreak/>
                                 <LineBreak/>
                                 Note: This process can take up to 2 hours
                             </TextBlock>
@@ -47,7 +60,7 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="250" Width="270" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="250" Width="270" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas>
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="15" Width="225" Height="130" TextWrapping="Wrap">
@@ -69,7 +82,7 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="250" Width="270" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="250" Width="270" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas>
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="15" Width="225" Height="150" TextWrapping="Wrap">
@@ -91,7 +104,7 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="250" Width="270" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="250" Width="270" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas>
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="15" Width="225" Height="150" TextWrapping="Wrap">
@@ -111,7 +124,7 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="350" Width="300" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="350" Width="300" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas>
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="15" Width="250" Height="250" TextWrapping="Wrap">
@@ -137,7 +150,7 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="250" Width="270" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="250" Width="270" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas FocusManager.FocusedElement="{Binding ElementName=PwdBox}">
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="15" Width="225" Height="95" TextWrapping="Wrap">
@@ -159,7 +172,7 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="250" Width="270" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="250" Width="270" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas>
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="30" Width="225" Height="95" TextWrapping="Wrap">
@@ -179,7 +192,7 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="350" Width="300" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="350" Width="300" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas>
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="15" Width="250" Height="250" TextWrapping="Wrap">
@@ -207,7 +220,7 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="250" Width="270" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="250" Width="270" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas>
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="15" Width="225" Height="150" TextWrapping="Wrap">
@@ -224,7 +237,7 @@ Function Get-Segment {
                     [xml]$msg = '
                     <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" 
                         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Name="Window"
-                        Title="iOS Backup Utility" Height="250" Width="270" ShowInTaskbar="True"
+                        Title="<Company> iOS Archive Utility" Height="250" Width="270" ShowInTaskbar="True"
                         WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
                         <Canvas>
                             <TextBlock Name="Text1" Canvas.Left="15" Canvas.Top="15" Width="225" Height="150" TextWrapping="Wrap">
@@ -232,7 +245,7 @@ Function Get-Segment {
                                 Please disconnect your device then try again.<LineBreak/>
                                 <LineBreak/>
                                 If the backup fails again, please contact the IT Helpdesk (ITHelpdesk@company.com)
-                                [phone number].
+                                (555) 555-5555.
                             </TextBlock>
                             <Button x:Name="Button1" Content="OK" Canvas.Left="87.5" Canvas.Top="162" Width="75" Height="23" FontWeight="Bold"/>
                         </Canvas>
@@ -306,7 +319,7 @@ Function Get-Segment {
                 1 {
                     $command = [PowerShell]::Create().AddScript({
                         [xml]$msg = '
-                        <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="iOS Backup Utility" Height="250" Width="270" WindowStartupLocation = "CenterScreen" ResizeMode="NoResize">
+                        <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="<Company> iOS Archive Utility" Height="250" Width="270" WindowStartupLocation = "CenterScreen" ResizeMode="NoResize">
                             <Grid>
                                 <StackPanel>
                                     <TextBlock Name="Text1" HorizontalAlignment="Center" Margin="0,75,0,5" Text="Processing. Please Wait."/>
@@ -351,7 +364,7 @@ Function Get-Segment {
                 2 {
                     $command = [PowerShell]::Create().AddScript({
                         [xml]$msg = '
-                        <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="iOS Backup Utility" Height="250" Width="270" WindowStartupLocation = "CenterScreen" ResizeMode="NoResize">
+                        <Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="<Company> iOS Archive Utility" Height="250" Width="270" WindowStartupLocation = "CenterScreen" ResizeMode="NoResize">
                             <Grid>
                                 <StackPanel>
                                     <TextBlock Name="Text1" HorizontalAlignment="Center" Margin="0,75,0,5" Text=" "/>
@@ -875,6 +888,20 @@ Function Create-Zip {
 Function Copy-File {
     Update-Message -status "Copying file to server"
 
+    $name = $zip.Split("\") | Select -Last 1
+    if(test-path "$share\$name"){
+        $raw = $name -Replace '.zip'
+        if(test-path -literalpath "$share\$raw [1].zip"){
+            $current = get-childitem $share -filter "$($raw)*" -exclude $name | sort name | select -last 1
+            [int]$number = ($current.Name -Split " " -Replace ".zip|[\[\]]")[1]
+            $number++
+            $name = "$raw [$number].zip"
+        }
+        else{
+            $name = "$raw [1].zip"
+        }
+    }
+
     $script:tempHash = [hashtable]::Synchronized(@{})
     $temp_runspace = [runspacefactory]::CreateRunspace()
     $temp_runspace.ApartmentState = "STA"
@@ -885,12 +912,12 @@ Function Copy-File {
     $parameters = @{
         param1 = $zip
         param2 = $share
+        param3 = $name
     }
 
     $scriptblock = {
-        Param($param1,$param2)
-        $name = $param1.Split("\") | Select -Last 1
-        $onserver = "$param2\$name"
+        Param($param1,$param2,$param3)
+        $onserver = "$param2\$param3"
         $from = [io.filestream]::new($param1, [io.filemode]::Open)
         $to = [io.filestream]::new($onserver, [io.filemode]::Create)
         try{
@@ -1087,7 +1114,6 @@ If(!$copycomplete){
 # quick cleanup
 Stop-Message
 Get-Segment -mode process -type 1
-Start-Sleep -Milliseconds 100
 Update-Message -status "Performing some cleanup"
 Try{
     Remove-Item -Path $archivedir -Recurse -Force -ErrorAction Stop
