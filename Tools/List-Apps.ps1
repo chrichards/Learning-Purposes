@@ -15,6 +15,10 @@
 
 .PARAMETER IncludeUser
   A switch that checks through loaded userprofiles for installed applications.
+  
+.PARAMETER UserOnly
+  A switch that looks ONLY at user installations. This parameter cannot be used in conjunction
+  with 'IncludeUser'.
 
 .NOTES
   Created: 6/6/2019
