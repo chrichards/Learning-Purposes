@@ -1,22 +1,75 @@
+<#
+.SYNOPSIS
+  Name: list-apps.ps1
+  This script allows you to list installed applications on a computer.
+
+.DESCRIPTION
+  List-apps.ps1 was made for a faster query of installed applications rather than relying
+  on a WMI query to win32_product. This script automatically does a wildcard lookup if
+  looking for a specific installed app. It also includes the ability to see what user-based
+  applications are installed on a machine.
+
+.PARAMETER AppName
+  Specifies the DisplayName of the application you're trying to find. This parameter
+  is processed as a wildcard so an exact name is not necessary.
+
+.PARAMETER IncludeUser
+  A switch that checks through loaded userprofiles for installed applications.
+
+.NOTES
+  Created: 6/6/2019
+  Release: 6/18/2019
+  Author: Chris Richards
+
+  This function can be placed into a script and called within the script OR
+  loaded into a console session and run from there. To load this function into
+  the active console session, use the command:
+    . "<path to script>\list-apps.ps1"
+
+.EXAMPLE
+  To list all SYSTEM applications that appear in Add/Remove Programs, run:
+  List-InstalledApps
+
+.EXAMPLE
+  Check to see if Microsoft Office is installed on the computer:
+  List-InstalledApps -AppName Office
+
+.EXAMPLE
+  Run the function with the '-IncludeUser' switch to include installations that 
+  have rooted themselves in a user's profile:
+  List-InstalledApps -IncludeUser
+
+#>
+
+
 function List-InstalledApps {
     param(
         $AppName,
-        [switch]$IncludeUser
+        [switch]$IncludeUser,
+        [switch]$UserOnly
     )
 
     begin {
 
-        $path   = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
-        $path32 = 'SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
-
-        # collect install information
-        $products = get-childitem "hklm:\$path"
-
-        if (test-path "hklm:\$path32") {
-            $products += get-childitem "hklm:\$path32"
+        if ($IncludeUser -and $UserOnly) {
+            write-error 'You cannot use these parameters together: IncludeUser, UserOnly.'
+            break
         }
 
-        if ($IncludeUser) {
+        $path   = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
+        $path32 = 'SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
+        $products = @()
+
+        if (!$UserOnly) {
+            # collect install information
+            $products = get-childitem "hklm:\$path"
+
+            if (test-path "hklm:\$path32") {
+                $products += get-childitem "hklm:\$path32"
+            }
+        }
+
+        if ($IncludeUser -or $UserOnly) {
             # check if there's currently a loaded user hive
             if (test-path 'hkcu:\') {
                 $products += get-childitem "hkcu:\$path"
