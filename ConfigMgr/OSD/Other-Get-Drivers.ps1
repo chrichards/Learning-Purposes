@@ -2,6 +2,13 @@ param(
     $x, $y, $z
 )
 
+# will reach out to the SMS provider to get driver package info
+# driver packages need computer model details in their descriptions
+# x = SMS provider server
+# y = account password, hashed (e.g. "password" | ConvertTo-SecureString -AsPlainText -Force | ConvertFrom-SecureString -Key $key)
+# z = account username
+
+
 function Get-DriverPackageInformation {
     
     [CmdletBinding()]
