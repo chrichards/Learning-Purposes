@@ -28,10 +28,21 @@ param (
     [int[]]$days
 )
 
-# get info on users that have authenticated with the domain
-# and logged into the system
-$netProfiles = get-wmiobject -class win32_NetworkLoginProfile | 
-    where {$_.Name -notlike 'NT AUTHORITY*'} | select-object *
+# get info on user's that have accessed the system
+# info is generated based on user profile events
+$userAccessInfo = @()
+$data = get-winevent -filterhashtable @{LogName = 'Microsoft-Windows-User Profile Service/Operational'; Id = '67'}
+
+foreach ($datum in $data) {
+    if($datum.Properties[1].Value -notin $userAccessInfo.Path){
+        $temp = [pscustomobject]@{
+            'LastAccess' = $datum.TimeCreated
+            'Path' = $datum.Properties[1].Value
+        }
+        
+        $userAccessInfo += $temp
+    }
+}
 
 # get all the locally built profiles on the system, excluding
 # special system accounts
@@ -39,30 +50,27 @@ $localProfiles = get-wmiobject -class win32_UserProfile -filter "Special=$false"
     select-object *
 
 # attempt to remove profiles older than $days
-foreach ($netProfile in $netProfiles) {
+foreach ($user in $userAccessInfo) {
     
-    # convert the WMI time to standard powershell format
-    if ($netProfile.LastLogon -ne $null) {
-        $lastLogon = [System.Management.ManagementDateTimeConverter]::ToDateTime($netProfile.LastLogon)
-    }
-    # if the time is null, make it the original reference time
-    else {
-        $lastLogon = "01/01/1970 00:00:00"
-    }
+    # declare the user's last access time
+    $lastAccess = $user.LastAccess
 
     # make the comparison date $days prior to $now
     $dateCompare = (get-date).AddDays(-$($days))
-
     
-    if ($lastLogon -le $dateCompare) {
-        $pathName = ($netProfile.Name).Split("\")[1]
+    if ($lastAccess -le $dateCompare) {
+        $pathName = $user.Path
         
-        try {
-            ($localProfiles | where {$_.LocalPath -match $pathName}).Delete()
-            write-output "$pathName has been removed"
-        }
-        catch {
-            $_.exception.message
+        # just because it's in the logs doesn't mean it's still there
+        # check for the existence of the user
+        if ($pathName -in $localProfiles.LocalPath){
+            try {
+                ($localProfiles | where {$_.LocalPath -match $pathName}).Delete()
+                write-output "$pathName has been removed; last access was $lastAccess"
+            }
+            catch {
+                $_.exception.message
+            }
         }
 
     }
