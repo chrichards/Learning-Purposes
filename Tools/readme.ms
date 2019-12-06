@@ -6,3 +6,6 @@ and iterate through those, too? Sure. But this was in an effort to be fast and e
 2) old-profile.ps1 isn't anything too spectacular. You run this script on a local computer and remove old profiles that haven't logged
 in with whatever amount of days you specify. It only looks at network accounts so local accounts AND system accounts are ignored. It's
 a best-effort script, meaning it might fail trying to remove the local userprofile that is already built.
+
+3) Wake on Lan is a work in progress. This tool is a GUI that enables a user (with proper rights/permissions) to see all the computers
+in their subnet, what said computers' net status is, and allow for a wake-on-lan packet to be sent to those machines.
