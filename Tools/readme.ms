@@ -9,3 +9,4 @@ a best-effort script, meaning it might fail trying to remove the local userprofi
 
 3) Wake on Lan is a work in progress. This tool is a GUI that enables a user (with proper rights/permissions) to see all the computers
 in their subnet, what said computers' net status is, and allow for a wake-on-lan packet to be sent to those machines.
+    [UPDATE] Final things to configure are the 'Refresh' and 'Wake All' buttons.
