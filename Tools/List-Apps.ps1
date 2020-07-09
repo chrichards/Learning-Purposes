@@ -23,6 +23,7 @@
 .NOTES
   Created: 6/6/2019
   Release: 6/18/2019
+  Updated: 7/9/2020
   Author: Chris Richards
 
   This function can be placed into a script and called within the script OR
@@ -62,24 +63,24 @@ function List-InstalledApps {
 
         $path   = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
         $path32 = 'SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall'
-        $products = @()
+        $products = [System.Collections.ArrayList]::new()
 
         if (!$UserOnly) {
             # collect install information
-            $products = get-childitem "hklm:\$path"
+            get-childitem "hklm:\$path" | % {$products.Add($_) | Out-Null}
 
             if (test-path "hklm:\$path32") {
-                $products += get-childitem "hklm:\$path32"
+                get-childitem "hklm:\$path32" | % {$products.Add($_) | Out-Null}
             }
         }
 
         if ($IncludeUser -or $UserOnly) {
             # check if there's currently a loaded user hive
             if (test-path 'hkcu:\') {
-                $products += get-childitem "hkcu:\$path"
+                $products.Add({get-childitem "hkcu:\$path"})
 
                 if (test-path "hkcu:\$path32") {
-                    $products += get-childitem "hkcu:\$path32"
+                    $products.Add({get-childitem "hkcu:\$path32"})
                 }
             }
             
@@ -90,16 +91,16 @@ function List-InstalledApps {
 
             foreach ($availableUser in $availableUsers) {
                 if ($availableUser -in $userProfiles.SID) {
-                    $produces += get-childitem "hku:\$availableUser\$path"
+                    $products.Add({get-childitem "hku:\$availableUser\$path"})
 
                     if (test-path "hku:\$availableUser\$path32") {
-                        $products += get-childitem "hku:\$availableUser\$path32"
+                        $products.Add({get-childitem "hku:\$availableUser\$path32"})
                     }
                 }
             }
         }
 
-        $apps = @()
+        $apps = [System.Collections.ArrayList]::new()
 
     }
 
@@ -131,13 +132,14 @@ function List-InstalledApps {
                 Continue
             }
 
-            $app = new-object psobject
-            $app | add-member -membertype noteproperty -name "AppName" -value $name
-            $app | add-member -membertype noteproperty -name "Version" -value $version
-            $app | add-member -membertype noteproperty -name "Uninstall" -value $uninstall
+            $app = [PsCustomObject]@{
+                "AppName"   = $name
+                "Version"   = $version
+                "Uninstall" = $uninstall
+            }
 
-            $apps += $app
-            $name = $null; $version = $null; $uninstall = $null
+            $apps.Add($app) | Out-Null
+            $name = $version = $uninstall = $null
         }
         
     }
