@@ -24,9 +24,9 @@
 
 #>
 param (
-    [parameter(mandatory=$true)]
-    [ValidateNotNullorEmpty()]
-    [int[]]$days
+    #[parameter(mandatory=$true)]
+    #[ValidateNotNullorEmpty()]
+    [int[]]$days = 90
 )
 
 # code signature for advapi32:RegQueryInfoKey
@@ -77,7 +77,7 @@ foreach ($datum in $data) {
 
 # if the machine was recently serviced, we want the 
 # historical data as well
-if (test-path 'C:\Windows.old') {
+if (test-path 'C:\Windows.old\WINDOWS\System32\winevt\Logs\Microsoft-Windows-User Profile Service%4Operational.evtx') {
 
     $path = 'C:\Windows.old\WINDOWS\System32\winevt\Logs\Microsoft-Windows-User Profile Service%4Operational.evtx'
     $data = get-winevent -filterhashtable @{Path = $path; Id = '67'}
@@ -228,10 +228,13 @@ if ($moreInfoRequired) {
 foreach ($user in $userAccessInfo) {
 
     if ($user.LastAccess -le $dateCompare) {
-
+    
         try {
-            (get-wmiobject -class win32_userprofile | where {$_.Localpath -eq $user.Path}).Delete()
-            write-output "removed $($user.Path)"
+            $Obj = (get-wmiobject -class win32_userprofile | where {$_.Localpath -eq $user.Path})
+            If($Obj) {
+                $Obj.Delete()
+                write-output "removed $($user.Path)"
+            }
         }
         catch {
             $_.exception.message
