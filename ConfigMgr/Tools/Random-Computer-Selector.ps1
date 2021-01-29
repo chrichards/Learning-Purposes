@@ -138,7 +138,7 @@ $scriptblock = {
             }
         }
         
-        #$randomly_selected = $user = $user_check = $selected = $department = $null                
+        $randomly_selected = $user = $user_check = $selected = $department = $null                
 
     } Until ($done -eq $true)
 
