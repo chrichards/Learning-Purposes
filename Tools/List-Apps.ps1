@@ -77,24 +77,25 @@ function List-InstalledApps {
         if ($IncludeUser -or $UserOnly) {
             # check if there's currently a loaded user hive
             if (test-path 'hkcu:\') {
-                $products.Add({get-childitem "hkcu:\$path"})
+                get-childitem "hkcu:\$path" | % {$products.Add($_) | Out-Null}
 
                 if (test-path "hkcu:\$path32") {
-                    $products.Add({get-childitem "hkcu:\$path32"})
+                    get-childitem "hkcu:\$path32" | % {$products.Add($_) | Out-Null}
                 }
             }
             
             # check if there are users loaded in memory
             new-psdrive -name hku -psprovider registry -root HKEY_USERS | out-null
             $availableUsers = (get-childitem 'hku:\').Name -replace 'HKEY_USERS\\'
-            $userProfiles = get-ciminstance -classname win32_userprofile -filter 'SID LIKE "S-1-5-21%"'
+            $userProfiles = get-ciminstance -classname win32_userprofile -filter "special=$false"
 
-            foreach ($availableUser in $availableUsers) {
-                if ($availableUser -in $userProfiles.SID) {
-                    $products.Add({get-childitem "hku:\$availableUser\$path"})
+            foreach ($userProfile in $userProfiles) {
+                if (($userProfile.SID -in $availableUsers) -and ($userProfile.Loaded -eq $false)) {
+                    $sid = $userProfile.SID
+                    get-childitem "hku:\$sid\$path" | % {$products.Add($_) | Out-Null}
 
-                    if (test-path "hku:\$availableUser\$path32") {
-                        $products.Add({get-childitem "hku:\$availableUser\$path32"})
+                    if (test-path "hku:\$sid\$path32") {
+                        get-childitem "hku:\$sid\$path32" | % {$products.Add($_) | Out-Null}
                     }
                 }
             }
