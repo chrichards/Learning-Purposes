@@ -23,7 +23,7 @@
 .NOTES
   Created: 6/6/2019
   Release: 6/18/2019
-  Updated: 7/9/2020
+  Updated: 2/1/2021
   Author: Chris Richards
 
   This function can be placed into a script and called within the script OR
