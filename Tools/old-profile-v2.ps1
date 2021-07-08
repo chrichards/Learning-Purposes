@@ -228,11 +228,10 @@ if ($moreInfoRequired) {
 foreach ($user in $userAccessInfo) {
 
     if ($user.LastAccess -le $dateCompare) {
-    
         try {
-            $Obj = (get-wmiobject -class win32_userprofile | where {$_.Localpath -eq $user.Path})
+            $Obj = (get-CIMInstance -className win32_userprofile | where {$_.Localpath -eq $user.Path})
             If($Obj) {
-                $Obj.Delete()
+                $Obj | Remove-CimInstance
                 write-output "removed $($user.Path)"
             }
         }
