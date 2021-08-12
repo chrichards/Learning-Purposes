@@ -152,7 +152,7 @@ EOF
 IFS='' read -r -d '' LaunchDaemonScript <<EOF
 #!/bin/bash
 Month_to_Number () {
-	case $1 in
+	case \$1 in
 		'Jan') Month=1 ;;
 		'Feb') Month=2 ;;
 		'Mar') Month=3 ;;
@@ -168,26 +168,26 @@ Month_to_Number () {
 		*) Month=0 ;;
 	esac
 	
-	echo $Month
+	echo \$Month
 }
 
 Date_to_Number () {
-	Month=$(Month_to_Number $(echo $1 | awk '{print $1}'))
-	Day=$(echo $1 | awk '{print $2}')
-	Time=$(echo $1 | awk '{print $3}' | sed 's/://g')
+	Month=\$(Month_to_Number \$(echo \$1 | awk '{print \$1}'))
+	Day=\$(echo \$1 | awk '{print \$2}')
+	Time=\$(echo \$1 | awk '{print \$3}' | sed 's/://g')
 	
-	if [[ $(echo $1 | awk -F: '{print NF-1}') == 1 ]]; then
-		Time="${Time}00"
+	if [[ \$(echo \$1 | awk -F: '{print NF-1}') == 1 ]]; then
+		Time="\${Time}00"
 	fi
 	
-	echo "$Month$Day$Time"
+	echo "\$Month\$Day\$Time"
 }
 
-LastReboot=$(last reboot | head -1 | grep -oE "[aA-zZ]{3} [0-9]{2} [0-9]{2}:[0-9]{2}")
-CurrentTime=$(date | awk '{print $2" "$3" "$4}')
+LastReboot=\$(last reboot | head -1 | grep -oE "[aA-zZ]{3} [0-9]{2} [0-9]{2}:[0-9]{2}")
+CurrentTime=\$(date | awk '{print \$2" "\$3" "\$4}')
 
-CompareA=$(($(Date_to_Number "$LastReboot")+1000000)) # Add a day
-CompareB=$(Date_to_Number "$CurrentTime")
+CompareA=\$((\$(Date_to_Number "\$LastReboot")+1000000)) # Add a day
+CompareB=\$(Date_to_Number "\$CurrentTime")
 
 if (( CompareA > CompareB )); then
 	Rebooted='true'
@@ -195,11 +195,11 @@ else
 	Rebooted='false'
 fi
 
-if [[ "$Rebooted" == true ]]; then
-	CurrentDate=$(date +%m/%d/%Y)
-	LastUpdate=$(softwareupdate --history | grep -oE "[0-9]{2}/[0-9]{2}/[0-9]{4}" | tail -1)
+if [[ "\$Rebooted" == true ]]; then
+	CurrentDate=\$(date +%m/%d/%Y)
+	LastUpdate=\$(softwareupdate --history | grep -oE "[0-9]{2}/[0-9]{2}/[0-9]{4}" | tail -1)
 	
-	if [[ "$LastUpdate" != "$CurrentDate" ]]; then
+	if [[ "\$LastUpdate" != "\$CurrentDate" ]]; then
 		RemediationNeeded="true"
 	fi
 	
@@ -207,13 +207,13 @@ if [[ "$Rebooted" == true ]]; then
 	/bin/launchctl unload "$LaunchDaemonPath"
 	rm -f "$LaunchAgentPath1"
 	rm -f "$LaunchDaemonPath"
-elif [[ "$Rebooted" == false ]]; then
+elif [[ "\$Rebooted" == false ]]; then
 	exit 0
 else
 	exit 1
 fi
 
-if [[ "$RemediationNeeded" != true ]]; then
+if [[ "\$RemediationNeeded" != true ]]; then
 	rm -f "$LaunchAgentPath2"
 	rm -f "$LaunchAgentPath3"
 	rm -rf "$Store"
