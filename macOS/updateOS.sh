@@ -4,7 +4,7 @@
 # VARIABLES
 ##############################################
 if [ -n $4 ]; then
-	Organization=$("$4" | awk '{print tolower($0)}')
+	Organization=$(echo "$4" | awk '{print tolower($0)}')
 else
 	Organization="stevecorp"
 fi
@@ -21,12 +21,12 @@ LaunchAgentScriptPath1="$Store/alertUser.sh"
 # Launch agent that is activated if updates
 # did not install after reboot
 LaunchAgentName2="com.$Organization.remediation"
-LaunchAgentPath2="/Library/LaunchAgents/$LaunchAgentName2"
+LaunchAgentPath2="/Library/LaunchAgents/$LaunchAgentName2.plist"
 LaunchAgentScriptPath2="$Store/remediation.sh"
 
 # Launch Agent that makes sure the user presses the update button
 LaunchAgentName3="com.$Organization.watcher"
-LaunchAgentPath3="/Library/LaunchAgents/$LaunchAgentName3"
+LaunchAgentPath3="/Library/LaunchAgents/$LaunchAgentName3.plist"
 LaunchAgentScriptPath3="$Store/watcher.sh"
 
 # Verify updates were installed on reboot
@@ -53,7 +53,7 @@ UpdateLog=/tmp/update$(date +%F).log
 ##############################################
 # SCRIPTS AND PLISTS
 ##############################################
-IFS='' read -r -d '' PythonTimerScript <<'EOF'
+IFS='' read -r -d '' PythonTimerScript <<EOF
 #!/usr/bin/python
 
 import time
@@ -66,12 +66,12 @@ def countdown(t):
 	
 	if t > 0:
 		parent.after(1000, countdown, t-1)
-    else:
-        parent.quit()
+	else:
+		parent.quit()
 		
 t = 600
 parent = tk.Tk()
-parent.geometry("250x100)
+parent.geometry("250x100")
 parent.title("Restart Required")
 
 label1 = tk.Label(parent, font = "Impact 48 bold")
@@ -89,7 +89,7 @@ parent.overrideredirect(1)
 parent.mainloop()
 EOF
 
-IFS='' read -r -d '' PythonChoiceScript <<'EOF'
+IFS='' read -r -d '' PythonChoiceScript <<EOF
 #!/usr/bin/python
 
 from tkinter import *
@@ -131,7 +131,7 @@ parent.mainloop()
 print choice.get()
 EOF
 
-IFS='' read -r -d '' LaunchDaemon <<'EOF'
+IFS='' read -r -d '' LaunchDaemon <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -149,7 +149,7 @@ IFS='' read -r -d '' LaunchDaemon <<'EOF'
 </plist>
 EOF
 
-IFS='' read -r -d '' LaunchDaemonScript <<'EOF'
+IFS='' read -r -d '' LaunchDaemonScript <<EOF
 #!/bin/bash
 Month_to_Number () {
 	case $1 in
@@ -223,12 +223,15 @@ fi
 /usr/bin/defaults write "$LaunchAgentPath2" "StartInterval" 1800
 /usr/bin/defaults write "$LaunchAgentPath3" "RunAtLoad" -bool true
 
+/bin/chmod 644 "$LaunchAgentPath2"
+/bin/chmod 644 "$LaunchAgentPath3"
+
 /bin/launchctl load "$LaunchAgentPath2"
 /bin/launchctl load "$LaunchAgentPath3"
 
 EOF
 
-IFS='' read -r -d '' LaunchAgent1 <<'EOF'
+IFS='' read -r -d '' LaunchAgent1 <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -246,7 +249,7 @@ IFS='' read -r -d '' LaunchAgent1 <<'EOF'
 </plist>
 EOF
 
-IFS='' read -r -d '' LaunchAgent2 <<'EOF'
+IFS='' read -r -d '' LaunchAgent2 <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -264,7 +267,7 @@ IFS='' read -r -d '' LaunchAgent2 <<'EOF'
 </plist>
 EOF
 
-IFS='' read -r -d '' LaunchAgent3 <<'EOF'
+IFS='' read -r -d '' LaunchAgent3 <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -282,19 +285,16 @@ IFS='' read -r -d '' LaunchAgent3 <<'EOF'
 </plist>
 EOF
 
-IFS='' read -r -d '' LaunchAgentScript1 <<'EOF'
+IFS='' read -r -d '' LaunchAgentScript1 <<EOF
 #!/bin/bash
 
-/usr/bin/python "$PythonTimerScriptPath"
-for (( i=0; i<600; i++ )); do
-	sleep 1
-done
-
+/usr/bin/python "$PythonTimerScriptPath" &
+/bin/sleep 600
 /usr/sbin/softwareupdate --install --all --restart &
 exit 0
 EOF
 
-IFS='' read -r -d '' LaunchAgentScript2 <<'EOF'
+IFS='' read -r -d '' LaunchAgentScript2 <<EOF
 #!/bin/bash
 
 notification="Your system was unable to update on its own and requires your attention. If you choose not to update now, you will be reminded every 30 minutes."
@@ -309,7 +309,7 @@ fi
 exit 0
 EOF
 
-IFS='' read -r -d '' LaunchAgentScript3 <<'EOF'
+IFS='' read -r -d '' LaunchAgentScript3 <<EOF
 #!/bin/bash
 
 check=$(date +%F)
@@ -340,36 +340,52 @@ fi
 
 if [ ! -f "$PythonChoiceScriptPath" ]; then
 	echo "$PythonChoiceScript" > "$PythonChoiceScriptPath"
+	/usr/sbin/chown root:wheel "$PythonChoiceScriptPath"
+	/bin/chmod 644 "$PythonChoiceScriptPath"
 fi
 
 if [ ! -f "$PythonTimerScriptPath" ]; then
 	echo "$PythonTimerScript" > "$PythonTimerScriptPath"
+	/usr/sbin/chown root:wheel "$PythonTimerScriptPath"
+	/bin/chmod 644 "$PythonTimerScriptPath"
 fi
 
 # Drop the LaunchAgents in
 if [ ! -f "$LaunchAgentPath1" ]; then
 	echo "$LaunchAgent1" > "$LaunchAgentPath1"
+	/usr/sbin/chown root:wheel "$LaunchAgentPath1"
+	/bin/chmod 644 "$LaunchAgentPath1"
 fi
 
 if [ ! -f "$LaunchAgentPath2" ]; then
 	echo "$LaunchAgent2" > "$LaunchAgentPath2"
+	/usr/sbin/chown root:wheel "$LaunchAgentPath2"
+	/bin/chmod 644 "$LaunchAgentPath2"
 fi
 
 if [ ! -f "$LaunchAgentPath3" ]; then
 	echo "$LaunchAgent3" > "$LaunchAgentPath3"
+	/usr/sbin/chown root:wheel "$LaunchAgentPath3"
+	/bin/chmod 644 "$LaunchAgentPath3"
 fi
 
 # Now add all the LaunchAgent Scripts to the mix
 if [ ! -f "$LaunchAgentScriptPath1" ]; then
 	echo "$LaunchAgentScript1" > "$LaunchAgentScriptPath1"
+	/usr/sbin/chown root:wheel "$LaunchAgentScriptPath1"
+	/bin/chmod 644 "$LaunchAgentScriptPath1"
 fi
 
 if [ ! -f "$LaunchAgentScriptPath2" ]; then
 	echo "$LaunchAgentScript2" > "$LaunchAgentScriptPath2"
+	/usr/sbin/chown root:wheel "$LaunchAgentScriptPath2"
+	/bin/chmod 644 "$LaunchAgentScriptPath2"
 fi
 
-if [ ! -f "$LaunchAgentScriptPath2" ]; then
-	echo "$LaunchAgentScript2" > "$LaunchAgentScriptPath2"
+if [ ! -f "$LaunchAgentScriptPath3" ]; then
+	echo "$LaunchAgentScript3" > "$LaunchAgentScriptPath3"
+	/usr/sbin/chown root:wheel "$LaunchAgentScriptPath3"
+	/bin/chmod 644 "$LaunchAgentScriptPath3"
 fi
 
 # Drop the update checking daemon in place
@@ -382,6 +398,8 @@ fi
 # Make sure the daemon has something to run
 if [ ! -f "$LaunchDaemonScriptPath" ]; then
 	echo "$LaunchDaemonScript" > "$LaunchDaemonScriptPath"
+	/usr/sbin/chown root:wheel "$LaunchDaemonScriptPath"
+	/bin/chmod 644 "$LaunchDaemonScriptPath"
 fi
 
 # Check to make sure automatic updating is setup
@@ -442,7 +460,8 @@ if [ "$StartTime" == 0 ]; then
 	/usr/sbin/softwareupdate --install --all --restart &
 	exit 0
 else
-	/usr/bin/defaults write "$LaunchAgentPath1" "StartInterval" "$StartTime"
+	/usr/bin/defaults write "$LaunchAgentPath1" "StartInterval" -integer "$StartTime"
+	/bin/chmod 644 "$LaunchAgentPath1"
 	/bin/launchctl load "$LaunchAgentPath1"
 	exit 0
 fi
