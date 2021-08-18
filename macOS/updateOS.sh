@@ -49,6 +49,9 @@ PreferredConfigs=(
 )
 UpdateLog=/tmp/update$(date +%F).log
 
+# Finally, how long the timer should run for (in seconds)
+TimerCount=600
+
 
 ##############################################
 # SCRIPTS AND PLISTS
@@ -69,7 +72,7 @@ def countdown(t):
 	else:
 		parent.quit()
 		
-t = 600
+t = $TimerCount
 parent = tk.Tk()
 parent.geometry("250x100")
 parent.title("Restart Required")
@@ -102,8 +105,8 @@ options = [
 ]
 
 def select():
-    parent.quit()
-    
+	parent.quit()
+	
 parent = Tk()
 parent.geometry("400x100")
 parent.title("macOS Updates")
@@ -135,17 +138,17 @@ IFS='' read -r -d '' LaunchDaemon <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-    <dict>
-    <key>Label</key>
-    <string>$LaunchDaemonName</string>
-    <key>ProgramArguments</key>
-    <array>
-    <string>/bin/sh</string>
-    <string>$LaunchDaemonScriptPath</string>
-    </array>
-    <key>RunAtLoad</key>
-    <true/>
-    </dict>
+	<dict>
+	<key>Label</key>
+	<string>$LaunchDaemonName</string>
+	<key>ProgramArguments</key>
+	<array>
+	<string>/bin/sh</string>
+	<string>$LaunchDaemonScriptPath</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	</dict>
 </plist>
 EOF
 
@@ -196,17 +199,17 @@ else
 fi
 
 if [[ "\$Rebooted" == true ]]; then
-	CurrentDate=\$(date +%m/%d/%Y)
+	CurrentDate=\$(date +%Y%m%d)
 	LastUpdate=\$(softwareupdate --history | grep -oE "[0-9]{2}/[0-9]{2}/[0-9]{4}" | tail -1)
+	LastUpdateFormatted=\$(date -j -f %m/%d/%Y -v+3d \$LastUpdate +%Y%m%d)
 	
-	if [[ "\$LastUpdate" != "\$CurrentDate" ]]; then
+	if (( LastUpdateFormatted <= CurrentDate )); then
 		RemediationNeeded="true"
 	fi
 	
 	/bin/launchctl unload "$LaunchAgentPath1"
-	/bin/launchctl unload "$LaunchDaemonPath"
-	rm -f "$LaunchAgentPath1"
-	rm -f "$LaunchDaemonPath"
+	/bin/rm -f "$LaunchAgentPath1"
+	/bin/rm -f "$LaunchDaemonPath"
 elif [[ "\$Rebooted" == false ]]; then
 	exit 0
 else
@@ -214,9 +217,9 @@ else
 fi
 
 if [[ "\$RemediationNeeded" != true ]]; then
-	rm -f "$LaunchAgentPath2"
-	rm -f "$LaunchAgentPath3"
-	rm -rf "$Store"
+	/bin/rm -f "$LaunchAgentPath2"
+	/bin/rm -f "$LaunchAgentPath3"
+	/bin/rm -rf "$Store"
 	exit 0
 fi
 
@@ -235,17 +238,17 @@ IFS='' read -r -d '' LaunchAgent1 <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-    <dict>
-    <key>Label</key>
-    <string>$LaunchAgentName1</string>
-    <key>ProgramArguments</key>
-    <array>
-    <string>/bin/sh</string>
-    <string>$LaunchAgentScriptPath1</string>
-    </array>
+	<dict>
+	<key>Label</key>
+	<string>$LaunchAgentName1</string>
+	<key>ProgramArguments</key>
+	<array>
+	<string>/bin/sh</string>
+	<string>$LaunchAgentScriptPath1</string>
+	</array>
 	<key>RunAtLoad</key>
-    <false/>
-    </dict>
+	<false/>
+	</dict>
 </plist>
 EOF
 
@@ -253,17 +256,17 @@ IFS='' read -r -d '' LaunchAgent2 <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-    <dict>
-    <key>Label</key>
-    <string>$LaunchAgentName2</string>
-    <key>ProgramArguments</key>
-    <array>
-    <string>/bin/sh</string>
-    <string>$LaunchAgentScriptPath2</string>
-    </array>
-    <key>RunAtLoad</key>
-    <false/>
-    </dict>
+	<dict>
+	<key>Label</key>
+	<string>$LaunchAgentName2</string>
+	<key>ProgramArguments</key>
+	<array>
+	<string>/bin/sh</string>
+	<string>$LaunchAgentScriptPath2</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	</dict>
 </plist>
 EOF
 
@@ -271,27 +274,28 @@ IFS='' read -r -d '' LaunchAgent3 <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-    <dict>
-    <key>Label</key>
-    <string>$LaunchAgentName3</string>
-    <key>ProgramArguments</key>
-    <array>
-    <string>/bin/sh</string>
-    <string>$LaunchAgentScriptPath3</string>
-    </array>
-    <key>RunAtLoad</key>
-    <false/>
-    </dict>
+	<dict>
+	<key>Label</key>
+	<string>$LaunchAgentName3</string>
+	<key>ProgramArguments</key>
+	<array>
+	<string>/bin/sh</string>
+	<string>$LaunchAgentScriptPath3</string>
+	</array>
+	<key>RunAtLoad</key>
+	<false/>
+	</dict>
 </plist>
 EOF
 
 IFS='' read -r -d '' LaunchAgentScript1 <<EOF
 #!/bin/bash
 
-/usr/bin/python "$PythonTimerScriptPath" &
-/bin/sleep 600
-/usr/sbin/softwareupdate --install --all --restart &
-exit 0
+"$PythonTimerScriptPath" &> /dev/null &
+for (( i=0; i<$TimerCount; i++ )); do
+	sleep 1
+done
+/usr/sbin/softwareupdate --install --all --restart
 EOF
 
 IFS='' read -r -d '' LaunchAgentScript2 <<EOF
@@ -300,9 +304,9 @@ IFS='' read -r -d '' LaunchAgentScript2 <<EOF
 notification="Your system was unable to update on its own and requires your attention. If you choose not to update now, you will be reminded every 30 minutes."
 title="System Updates Required"
 icon="/System/Library/PreferencePanes/SoftwareUpdate.prefPane/Contents/Resources/SoftwareUpdate.icns"
-choice=$(/usr/bin/osascript -e 'display dialog "'"$notification"'" with title "'"$title"'" with icon {"'"$icon"'"} with text buttons {"Now","Later"}')
+choice=\$(/usr/bin/osascript -e 'display dialog "'"\$notification"'" with title "'"\$title"'" with icon {"'"\$icon"'"} with text buttons {"Now","Later"}')
 
-if [[ "$choice" =~ "Now" ]]; then
+if [[ "\$choice" =~ "Now" ]]; then
 	open -b com.apple.systempreferences /System/Library/PreferencePanes/SoftwareUpdate.prefPane
 fi
 
@@ -312,20 +316,20 @@ EOF
 IFS='' read -r -d '' LaunchAgentScript3 <<EOF
 #!/bin/bash
 
-check=$(date +%F)
+check=\$(date +%F)
 while :
 do
-    if [[ $(cat "/var/log/install.log" | grep $check".*SUAppStoreUpdateController: authorize") ]]; then
-        break
-    fi
-    sleep 1
+	if [[ \$(cat "/var/log/install.log" | grep \$check".*SUAppStoreUpdateController: authorize") ]]; then
+		break
+	fi
+	sleep 1
 done
 
 /bin/launchctl unload "$LaunchAgentPath2"
 /bin/launchctl unload "$LaunchAgentPath3"
-rm -f "$LaunchAgentPath2"
-rm -f "$LaunchAgentPath3"
-rm -rf "$Store"
+/bin/rm -f "$LaunchAgentPath2"
+/bin/rm -f "$LaunchAgentPath3"
+/bin/rm -rf "$Store"
 
 EOF
 
@@ -341,13 +345,13 @@ fi
 if [ ! -f "$PythonChoiceScriptPath" ]; then
 	echo "$PythonChoiceScript" > "$PythonChoiceScriptPath"
 	/usr/sbin/chown root:wheel "$PythonChoiceScriptPath"
-	/bin/chmod 644 "$PythonChoiceScriptPath"
+	/bin/chmod 755 "$PythonChoiceScriptPath"
 fi
 
 if [ ! -f "$PythonTimerScriptPath" ]; then
 	echo "$PythonTimerScript" > "$PythonTimerScriptPath"
 	/usr/sbin/chown root:wheel "$PythonTimerScriptPath"
-	/bin/chmod 644 "$PythonTimerScriptPath"
+	/bin/chmod 755 "$PythonTimerScriptPath"
 fi
 
 # Drop the LaunchAgents in
@@ -373,19 +377,19 @@ fi
 if [ ! -f "$LaunchAgentScriptPath1" ]; then
 	echo "$LaunchAgentScript1" > "$LaunchAgentScriptPath1"
 	/usr/sbin/chown root:wheel "$LaunchAgentScriptPath1"
-	/bin/chmod 644 "$LaunchAgentScriptPath1"
+	/bin/chmod 755 "$LaunchAgentScriptPath1"
 fi
 
 if [ ! -f "$LaunchAgentScriptPath2" ]; then
 	echo "$LaunchAgentScript2" > "$LaunchAgentScriptPath2"
 	/usr/sbin/chown root:wheel "$LaunchAgentScriptPath2"
-	/bin/chmod 644 "$LaunchAgentScriptPath2"
+	/bin/chmod 755 "$LaunchAgentScriptPath2"
 fi
 
 if [ ! -f "$LaunchAgentScriptPath3" ]; then
 	echo "$LaunchAgentScript3" > "$LaunchAgentScriptPath3"
 	/usr/sbin/chown root:wheel "$LaunchAgentScriptPath3"
-	/bin/chmod 644 "$LaunchAgentScriptPath3"
+	/bin/chmod 755 "$LaunchAgentScriptPath3"
 fi
 
 # Drop the update checking daemon in place
@@ -399,7 +403,7 @@ fi
 if [ ! -f "$LaunchDaemonScriptPath" ]; then
 	echo "$LaunchDaemonScript" > "$LaunchDaemonScriptPath"
 	/usr/sbin/chown root:wheel "$LaunchDaemonScriptPath"
-	/bin/chmod 644 "$LaunchDaemonScriptPath"
+	/bin/chmod 755 "$LaunchDaemonScriptPath"
 fi
 
 # Check to make sure automatic updating is setup
@@ -418,11 +422,11 @@ done
 # Check the output
 if [[ $(cat $UpdateLog | grep "No updates are available.") ]]; then
 	echo "System is up-to-date."
-	rm -f "$LaunchDaemonPath"
-	rm -f "$LaunchAgentPath1"
-	rm -f "$LaunchAgentPath2"
-	rm -f "$LaunchAgentPath3"
-	rm -rf "$Store"
+	/bin/rm -f "$LaunchDaemonPath"
+	/bin/rm -f "$LaunchAgentPath1"
+	/bin/rm -f "$LaunchAgentPath2"
+	/bin/rm -f "$LaunchAgentPath3"
+	/bin/rm -rf "$Store"
 	exit 0
 elif [[ $(cat $UpdateLog | grep "Please restart immediately.") || $(cat $UpdateLog | grep "Downloaded") ]]; then
 	echo "System needs to update."
