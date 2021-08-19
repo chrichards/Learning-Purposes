@@ -224,6 +224,7 @@ if [[ "\$RemediationNeeded" != true ]]; then
 fi
 
 /usr/bin/defaults write "$LaunchAgentPath2" "StartInterval" 1800
+/usr/bin/defaults write "$LaunchAgentPath2" "RunAtLoad" -bool true
 /usr/bin/defaults write "$LaunchAgentPath3" "RunAtLoad" -bool true
 
 /bin/chmod 644 "$LaunchAgentPath2"
