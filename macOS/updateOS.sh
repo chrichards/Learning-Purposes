@@ -50,7 +50,7 @@ PreferredConfigs=(
 UpdateLog=/tmp/update$(date +%F).log
 
 # Finally, how long the timer should run for (in seconds)
-TimerCount=600
+TimerCount=300
 
 
 ##############################################
@@ -452,11 +452,11 @@ case "$UserChoice" in
 	'Install updates and restart now')
 		StartTime=0	;;
 	'Snooze for 1 hour')
-		StartTime=3000 ;;
+		StartTime=1 ;;
 	'Snooze for 3 hours')
-		StartTime=10200 ;;
+		StartTime=3 ;;
 	'Snooze for 8 hours')
-		StartTime=28200 ;;
+		StartTime=8 ;;
 esac
 
 echo "User has chosen '$UserChoice'"
@@ -465,7 +465,14 @@ if [ "$StartTime" == 0 ]; then
 	/usr/sbin/softwareupdate --install --all --restart &
 	exit 0
 else
-	/usr/bin/defaults write "$LaunchAgentPath1" "StartInterval" -integer "$StartTime"
+	CurrentHour=$(date +%H)
+	StartHour=$((CurrentHour+StartTime))
+	StartMinute=$(date +%M)
+	if (( StartHour >= 24 )); then
+		StartHour=$((StartHour-24))
+	fi
+	
+	/usr/libexec/PlistBuddy -c "add :StartCalendarInterval dict" -c "add :StartCalendarInterval:Hour integer $StartHour" -c "add :StartCalendarInterval:Minute integer $StartMinute" "$LaunchAgentPath1"
 	/bin/chmod 644 "$LaunchAgentPath1"
 	/bin/launchctl load "$LaunchAgentPath1"
 	exit 0
