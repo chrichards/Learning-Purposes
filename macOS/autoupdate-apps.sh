@@ -172,7 +172,7 @@ fi
 # Microsoft Office
 # Let the Microsoft Updater handle things
 if [ -n "$CheckOffice" ]; then
-	OfficeApps=$(/usr/bin/find /Applications -iname "*Micosoft*" ! -iname "*Edge*" -depth 1)
+	OfficeApps=$(/usr/bin/find /Applications -iname "*Microsoft*" ! -iname "*Edge*" -depth 1)
 	if [ -n "$OfficeApps" ]; then
 		/bin/echo "Office apps installed"
 		msupdate=$(/usr/bin/find "/Library/Application Support" -name "*msupdate*" 2> /dev/null)
