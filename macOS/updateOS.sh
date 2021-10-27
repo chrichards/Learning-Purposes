@@ -429,8 +429,16 @@ if [[ $(cat $UpdateLog | grep "No updates are available.") ]]; then
 	/bin/rm -f "$LaunchAgentPath3"
 	/bin/rm -rf "$Store"
 	exit 0
-elif [[ $(cat $UpdateLog | grep "Please restart immediately.") || $(cat $UpdateLog | grep "Downloaded") ]]; then
+elif [[ $(cat $UpdateLog | grep "Please restart immediately.") ]]; then
 	echo "System needs to update."
+elif [[ $(cat $UpdateLog | grep "Done.") ]]; then
+	echo "System updated - no need for restart."
+	/bin/rm -f "$LaunchDaemonPath"
+	/bin/rm -f "$LaunchAgentPath1"
+	/bin/rm -f "$LaunchAgentPath2"
+	/bin/rm -f "$LaunchAgentPath3"
+	/bin/rm -rf "$Store"
+	exit 0
 else
 	echo "Unable to determine system state."
 	exit 1
@@ -477,3 +485,4 @@ else
 	/bin/launchctl load "$LaunchAgentPath1"
 	exit 0
 fi
+
