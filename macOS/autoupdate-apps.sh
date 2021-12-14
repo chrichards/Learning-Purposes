@@ -1,13 +1,15 @@
 #!/bin/bash
 
 # To enable auto updating for an app, the appname must be specified
-# as an argument to the script. 
+# as an argument to the script.
+# Cyberduck
 # Google Chrome
 # Mozilla Firefox
 # Microsoft Edge
 # Microsoft Office
+# PowerShell
+# Slack
 # zoom
-
 
 # Define IFS
 IFS=$'\n'
@@ -30,18 +32,20 @@ done
 
 # Functions
 CheckAppExist () {
-	check=$(/usr/bin/find /Applications -name "*$1*" -maxdepth 1)
-	if [[ -n "$check" ]]; then
-		/bin/echo "$check"
+	Check=$(/usr/bin/find /Applications -name "*$1*" -maxdepth 2)
+	
+	if [[ -n "$Check" ]]; then
+		/bin/echo "$Check"
 	else
 		/bin/echo "Not Installed"
 	fi
 }
 	
 CheckAppVersion () {
-	version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$1/Contents/Info.plist")
-	if [[ -n "$version" ]]; then
-		/bin/echo "$version"
+	Version=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$1/Contents/Info.plist")
+	
+	if [[ -n "$Version" ]]; then
+		/bin/echo "$Version"
 	else
 		/bin/echo "Unknown"
 	fi
@@ -56,22 +60,46 @@ CheckLatestVersion () {
 }
 
 DownloadApp () {
-	package="/private/tmp/$1.pkg"
-	if [ -f "$package" ]; then
+	Extension="${2##*.}"
+	Package="/private/tmp/$1.$extension"
+	
+	if [ -f "$Package" ]; then
 		/bin/echo "$1 was already downloaded"
 	else
-		/usr/bin/curl -sJL "$2" -o "$package"
+		/usr/bin/curl -sJL "$2" -o "$Package"
 	fi
+	
+	echo $Package
 }
 
 InstallApp () {
-	package="/private/tmp/$1.pkg"
-	if [ ! -f "$package" ]; then
-		/bin/echo "$1 was not available to install"
-	else
-		/usr/sbin/installer -pkg "$package" -target /
-		/bin/rm -f "$package"
+	Package="$1"
+	Name="$2"
+	Extension="${Package##*.}"
+	
+	if [ ! -f "$Package" ]; then
+		/bin/echo "$Name was not available to install"
+		break
 	fi
+	
+	if [[ "$Extension" =~ "pkg" ]]; then
+		/usr/sbin/installer -pkg "$Package" -target /
+		/bin/rm -f "$Package"
+	elif [[ "$Extension" =~ "dmg" ]]; then
+		MountPt="/Volumes/$Name"
+		AppPath="$MountPt/$Name.app"
+		/usr/bin/hdiutil attach $Package -nobrowse
+		cp -rf $AppPath "/Applications"
+		/usr/bin/hdiutil detach $MountPt
+		rm -rf "$slackDmgPath"
+		/usr/sbin/chown -R root:admin "/Applications/$Name.app"
+	elif [[ "$Extension" =~ "zip" ]]; then
+		/usr/bin/unzip "$Package"
+		mv "/tmp/$Name.app" "/Applications"
+		/usr/sbin/chown -R root:admin "/Applications/$Name.app"
+	fi
+	
+	/bin/echo "$Name was updated"
 }
 
 # Check to see if the apps are installed
@@ -97,6 +125,18 @@ if [ -n "$array_Chrome" ]; then
 
 	array_Chrome+=("LatestVersion=$version")
 	array_Chrome+=("Download=$download")
+fi
+
+# Cyberduck
+if [ -n "$array_Cyberduck" ]; then
+	url="https://cyberduck.io/download/"
+	page=$(/usr/bin/curl -s "$url")
+	table=$(/bin/echo "$page" | /usr/bin/awk '{gsub(">","\n",$0);print}' | /usr/bin/grep zip -A 10)
+	version=$(/bin/echo "$table" | /usr/bin/grep -i version | /usr/bin/sed -E 's/[^0-9]*(([0-9]\.){0,4}[0-9]).*/\1/')
+	download=$(/bin/echo "$table" | /usr/bin/grep -i download | /usr/bin/sed -E 's/.*(http.*\.zip) .*/\1/')
+	
+	array_Cyberduck+=("LatestVersion=$version")
+	array_Cyberduck+=("Download=$download")
 fi
 
 # Firefox
@@ -149,6 +189,41 @@ if [ -n "$CheckOffice" ]; then
 	fi
 fi
 
+# PowerShell
+if [ -n "$array_PowerShell" ]; then
+	url="https://github.com/PowerShell/PowerShell"
+	page=$(/usr/bin/curl -s "$url")
+	types=$(/bin/echo "$page" | /usr/bin/grep -i .pkg | /usr/bin/grep -Ev "lts|rc")
+	one=$(/bin/echo "$types" | /usr/bin/head -1)
+	two=$(/bin/echo "$types" | /usr/bin/tail -1)
+	check=$(/usr/bin/arch)
+	
+	if [[ "$two" =~ "$check" ]]; then
+		# it's arm
+		use=$two
+	else
+		use=$one
+	fi
+	
+	download=$(/bin/echo "$use" | /usr/bin/sed -E 's/.*href="([^"]+).*/\1/')
+	version=$(/bin/echo "$download" | /usr/bin/sed -E 's/[^0-9]*(([0-9]+\.){0,4}[0-9]).*/\1/')
+	
+	array_PowerShell+=("LatestVersion=$version")
+	array_PowerShell+=("Download=$download")
+fi
+	
+# Slack
+if [ -n "$array_Slack" ]; then
+	url='https://downloads.slack-edge.com/mac_releases/releases.json'
+	page=$(/usr/bin/curl -s "$url")
+	parse=$(/bin/echo "$page" | /usr/bin/awk '{gsub(",","\n",$0);print}' | /usr/bin/tail -1 | /usr/bin/sed 's/,/\n/g')
+	download=$(/bin/echo "$page" | /usr/bin/grep "url" | /usr/bin/cut -d: -f2 -f3 | /usr/bin/sed 's/"//g')
+	version=$(/bin/echo "$page" | /usr/bin/grep "version" | /usr/bin/cut -d: -f2 | /usr/bin/sed 's/"//g')
+	
+	array_Slack+=("LatestVersion=$version")
+	array_Slack+=("Download=$download")
+fi
+
 # Zoom
 if [ -n "$array_zoom" ]; then
 	url="https://zoom.us/client/latest/ZoomInstallerIT.pkg"
@@ -193,10 +268,10 @@ for Array in ${Arrays[@]}; do
 	
 	# Download the latest version
 	/bin/echo "Beginning app download for $AppName"
-	DownloadApp "$AppName" "$DownloadUrl"
+	Filepath=$(DownloadApp "$AppName" "$DownloadUrl")
 	
 	# Install the app
-	InstallApp "$AppName"
+	InstallApp "$Filepath" "$AppName"
 	
 	# Just for cleanliness of output
 	echo "#############################"
