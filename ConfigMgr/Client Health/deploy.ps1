@@ -55,7 +55,7 @@ Function Write-Log {
         If ($header) {
             $spacer = "##############################"
             $tmpmessage = $spacer + " $(Get-Date -Format f) " + $spacer
-            $tmpdigest = "<![LOG[$tmpmessage]LOG]!><time=`"$($time.AddMilliseconds(-10))`" date=`"$date`" component=`"$component`" context=`"`" type=`"$type`" thread=`"`" file=`"`">"
+            $tmpdigest = "<![LOG[$tmpmessage]LOG]!><time=`"$(Get-Date -Format "hh:mm:ss.ms")`" date=`"$date`" component=`"$component`" context=`"`" type=`"$type`" thread=`"`" file=`"`">"
             $tmpdigest | Add-Content -Path $log
         }
 
@@ -185,8 +185,7 @@ Function Get-ADConnectionInformation {
     $destination = $env:LOGONSERVER -Replace "\\"
 
     # The logon server can't be itself; exit if it is
-    If (($destination -eq $env:COMPUTERNAME) -or
-        ($destinatnion -eq $null)) {
+    If (($destination -eq $env:COMPUTERNAME) -or ($destination -eq $null)) {
         Return $null
     }
 
@@ -283,7 +282,10 @@ Function Get-SMSDefaultMP {
                 }
 
                 If ($iisCheck.StatusCode -eq 200) {
-                    $connectingMP = $managementPoint.Name
+                    $connectingMP = [PsCustomObject]@{
+                        Name = $managementPoint.Name
+                        SiteCode = $managementPoint.SiteCode
+                    }
                     Break
                 }
             }
@@ -315,7 +317,7 @@ Function Get-CommunicationCertificate {
         $uri = $address
     }
     Else {
-        $uri = $address + "/CCM_Client"
+        $uri = "$address/CCM_Client"
     }
 
     # initial check
@@ -357,7 +359,7 @@ Function Get-CommunicationCertificate {
 
             ForEach ($cert in $certs) {
                 Try {
-                    $request = Invoke-WebRequest -Uri $uri -UseBasicParsing -Certificate $cert -ErrorAction Stop
+                    $request = Invoke-WebRequest -Uri "https://$uri" -UseBasicParsing -Certificate $cert -ErrorAction Stop
                 }
                 Catch {
                     $_.Exception.Message | Out-Null
@@ -411,6 +413,7 @@ Function Install-CcmClient {
 
             # Create the new directory
             If (-Not(Test-Path -Path $destination)) {
+                Write-Log -Message "Creating $destination" -Component "InstallStatus" -Type 1 
                 New-Item -Path $destination -ItemType Directory -Force | Out-Null
             }
 
@@ -418,10 +421,10 @@ Function Install-CcmClient {
             While (-Not(Test-Path -Path $destination)) { Start-Sleep -Milliseconds 100 }
 
             If ($certificate) {
-                $content = Invoke-WebRequest -Uri $directories[$i] -UseBasicParsing -Certificate $certificate
+                $content = Invoke-WebRequest -Uri $directories[$i] -UseBasicParsing -TimeoutSec 300 -Certificate $certificate
             }
             Else {
-                $content = Invoke-WebRequest -Uri $directories[$i] -UseBasicParsing
+                $content = Invoke-WebRequest -Uri $directories[$i] -UseBasicParsing -TimeoutSec 300
             }
 
             $links = $content.Links.HREF
@@ -441,11 +444,12 @@ Function Install-CcmClient {
                     $item = $tmp + ($link -Replace [regex]::Escape($childDir) -Replace "\/","\")
                     $ProgressPreference = 'SilentlyContinue'
 
+                    Write-Log -Message "Downloading $($link -Replace [regex]::Escape($childDir) -Replace "\/")" -Component "InstallStatus" -Type 1 
                     If ($certificate) {
-                        Invoke-WebRequest -Uri $parentDir -UseBasicParsing -Certificate $certificate -OutFile $item
+                        Invoke-WebRequest -Uri $parentDir -UseBasicParsing -TimeoutSec 300 -Certificate $certificate -OutFile $item
                     }
                     Else {
-                        Invoke-WebRequest -Uri $parentDir -UseBasicParsing -OutFile $item
+                        Invoke-WebRequest -Uri $parentDir -UseBasicParsing -TimeoutSec 300 -OutFile $item
                     }
                 }
 
@@ -462,8 +466,10 @@ Function Install-CcmClient {
 
         # The exe copied over successfully and we CAN install!
         # We need to do yet another cert check to dictate install switches
+        Write-Log -Message "Starting installation process..." -Component "InstallStatus" -Type 1 
         If ($certificate) {
             # SiteCode doesn't need to be stipulated if MP is specified
+
             Start-Process $exe -ArgumentList "CCMHOSTNAME=$source SMSMP=$mp /NOCRLCHECK /USEPKICERT" -Wait
         }
         Else {
@@ -735,7 +741,7 @@ If (-Not($clientCheck -and $secondClientCheck)) {
     # Didn't find the client so let's install it
     If ($authCertificate) {
         Write-Log -Message "Connecting to $($connectionInfo.DefaultMP) using HTTPS" -Component "InstallStatus" -Type 1   
-        $install = Install-CcmClient -Source $connectionInfo.DefaultMP -Certificate $authCertificate
+        $install = Install-CcmClient -Source "https://$($connectionInfo.DefaultMP)" -Certificate $authCertificate
     }
     Else {
         Write-Log -Message "Connecting to $($connectionInfo.DefaultMP) using Plaintext" -Component "InstallStatus" -Type 1 
