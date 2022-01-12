@@ -1,8 +1,6 @@
 Param ($cmg)
 
 $script = {
-
-
 Param (
     $CMG
 )
@@ -981,7 +979,6 @@ Write-Log -Message "Checking key services." -Component ConfigureServices -Type 1
 Set-ServiceConfigAndState -Services $services
 Write-Log -Message "Services all set." -Component ConfigureServices -Type 1
 ############################################################################
-
 }
 
 
