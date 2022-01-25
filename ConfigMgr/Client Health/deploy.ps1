@@ -1,8 +1,9 @@
-Param ($cmg)
+Param ($CMG,[Parameter(Mandatory=$true)]$SiteCode)
 
 $script = {
 Param (
-    $CMG
+    $CMG,
+    [Parameter(Mandatory=$true)]$SiteCode
 )
 
 # Variable declaration zone!
@@ -246,7 +247,7 @@ Function Get-ADConnectionInformation {
 
 # A function for checking mSSMS Boundary groups and doing comparisons
 Function Get-SMSBoundaryInformation {
-    Param ([IpAddress]$ip,$dc,$domain)
+    Param ([IpAddress]$ip,$dc,$domain,$site)
 
     # Convert an IP Address into decimal notation
     $bytes = $ip.GetAddressBytes()
@@ -261,7 +262,7 @@ Function Get-SMSBoundaryInformation {
     $distinguishedName = "dc=" + $domain.Replace(".",",dc=")
 
     # Lookup all the boundary ranges in AD
-    $directoryDomain = [System.DirectoryServices.DirectoryEntry]::("LDAP://$dc/$distinguishedName")
+    $directoryDomain = [System.DirectoryServices.DirectoryEntry]::new("LDAP://$dc/$distinguishedName")
     $directorySearcher = [System.DirectoryServices.DirectorySearcher]::new($directoryDomain)
     $directorySearcher.Filter = "(objectCategory=msSMSRoamingBoundaryRange)"
     $result = ($directorySearcher.FindAll()).Properties
@@ -280,7 +281,7 @@ Function Get-SMSBoundaryInformation {
     }
 
     # Finally, do a quick lookup of where the IP would live
-    Return $boundaryTable.Where{(($_.Start -le $compare) -and ($_.End -ge $compare))}
+    Return $boundaryTable.Where{(($_.Start -le $compare) -and ($_.End -ge $compare) -and ($_.SiteCode -eq $SiteCode))}
 
 }
 
@@ -338,7 +339,7 @@ Function Get-SMSDefaultMP {
         }
     }
     Else {
-        $connectingMP = $defaultMPTable.Where{$_.SiteCode -eq $site}
+        $connectingMP = $defaultMPTable.Where{$_.SiteCode -eq $check.SiteCode | Select-Object -First 1}
     }
 
     If ($connectingMP) {
@@ -725,10 +726,10 @@ $adConnectionAddress = Get-ADConnectionInformation
 
 If ($adConnectionAddress) {
     Write-Log -Message "Found connection to $($adConnectionAddress.Name), $($adconnectionAddress.Address)" -Component "Get-ADConnectionInformation" -Type 1
-    Write-Log -Message "Checking $($adConnectionAddress.Name) for SMS information" -Component "Get-SMSBoundaryInformation" -Type 1
+    Write-Log -Message "Checking $($adConnectionAddress.Name) for SMS information for SiteCode: $SiteCode" -Component "Get-SMSBoundaryInformation" -Type 1
 
     # AD is available so we'll try and find an MP from here
-    $boundaryInfo = Get-SMSBoundaryInformation -IP $adConnectionAddress.Address -DC $adConnectionAddress.Name -Domain $adConnectionAddress.Domain
+    $boundaryInfo = Get-SMSBoundaryInformation -IP $adConnectionAddress.Address -DC $adConnectionAddress.Name -Domain $adConnectionAddress.Domain -Site $SiteCode
 
     If ($boundaryInfo) {
         If ($boundaryInfo.Name.Count -gt 1) {
@@ -994,7 +995,7 @@ Else {
 
 # What is the scheduled task going to do?
 $action = New-ScheduledTaskAction -Execute "PowerShell.exe" -Argument `
-"-ExecutionPolicy Bypass $root\health.ps1 -cmg $cmg"
+"-ExecutionPolicy Bypass $root\health.ps1 -cmg $cmg -sitecode $SiteCode"
 
 # When is it going to do it?
 $class = Get-CimClass -Namespace root/Microsoft/Windows/TaskScheduler -ClassName MSFT_TaskEventTrigger
