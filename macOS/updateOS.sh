@@ -3,8 +3,20 @@
 ##############################################
 # VARIABLES
 ##############################################
-if [ -n $4 ]; then
-	Organization=$(echo "$4" | awk '{print tolower($0)}')
+# If using Jamf, start on $4
+if [[ "$1" =~ "/" ]]; then
+	for (( i=1; i<4; i++ )); do
+		shift 1
+	done
+	n=4
+else
+	n=1
+fi
+
+Parameter=${!n}
+
+if [ -n $Parameter ]; then
+	Organization=$(echo "$Parameter" | awk '{print tolower($0)}')
 else
 	Organization="stevecorp"
 fi
@@ -418,7 +430,7 @@ for Config in "${PreferredConfigs[@]}"; do
 done
 
 # Run the updater
-/usr/sbin/softwareupdate softwareupdate --install --all &> $UpdateLog
+/usr/sbin/softwareupdate --install --all &> $UpdateLog
 
 # Check the output
 if [[ $(cat $UpdateLog | grep "No updates are available.") ]]; then
@@ -485,4 +497,3 @@ else
 	/bin/launchctl load "$LaunchAgentPath1"
 	exit 0
 fi
-
