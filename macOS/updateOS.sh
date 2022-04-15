@@ -8,12 +8,9 @@ if [[ "$1" =~ "/" ]]; then
 	for (( i=1; i<4; i++ )); do
 		shift 1
 	done
-	n=4
-else
-	n=1
 fi
 
-Parameter=${!n}
+Parameter=$@
 
 if [ -n $Parameter ]; then
 	Organization=$(echo "$Parameter" | awk '{print tolower($0)}')
