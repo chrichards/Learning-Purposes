@@ -5,7 +5,7 @@
 # I will then take that big ol' byte array and deploy it as a separate script to /var/tmp/[name of file]
 
 # The plaintext passwords will then need to be encrypted using:
-# echo "plaintext password" | openssl enc -k "$(key you made above)" -aes256 -base64 -e
+# echo "[your plaintext password here]" | openssl enc -k "$(key you made above)" -aes256 -base64 -e
 # Yes, I'm aware it's not a key and is in fact a password...
 
 # Can adjust this later but this is just for ease of use with Jamf
