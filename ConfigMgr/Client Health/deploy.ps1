@@ -2,7 +2,7 @@ Param ($CMG,[Parameter(Mandatory=$true)]$SiteCode)
 
 $script = {
 Param (
-    $CMG,
+    $CMG, # looks something like https://<CMGname>.<your domain>.com/CCM_PROXY_MUTUALAUTH/72057594037938216
     [Parameter(Mandatory=$true)]$SiteCode
 )
 
