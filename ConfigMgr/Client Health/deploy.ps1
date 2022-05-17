@@ -273,22 +273,49 @@ Function Get-SMSBoundaryInformation {
     # Is there more than one boundary range?
     $objType = $result.GetType().BaseType.Name
     
+    # It's possible that the IP range is higher than was AD can handle
+    $maxInt = 2147483647
+    
     If ($objType -eq "DictionaryBase") {
+        If ($result.mssmsrangediplow -match '-') {
+            $low = $maxInt - $result.mssmsrangediplow
+        }
+        Else {
+            $low = $result.mssmsrangediplow
+        }
+        If ($result.mssmsrangediphigh -match '-') {
+            $high = $maxInt - $result.mssmsrangediphigh
+        }
+        Else {
+            $high = $result.mssmsrangediphigh
+        }
         $boundaryTable.Add([PsCustomObject]@{
             Name     = $result.name
             SiteCode = $result.mssmssitecode
-            Start    = $result.mssmsrangediplow
-            End      = $result.mssmsrangediphigh
+            Start    = $low
+            End      = $high
         }) | Out-Null
     }
     Else {
         For ($i=0;$i -lt $result.Count;$i++) {
             $temp = $result[$i]
+            If ($result.mssmsrangediplow -match '-') {
+                $low = $maxInt - $temp.mssmsrangediplow
+            }
+            Else {
+                $low = $temp.mssmsrangediplow
+            }
+            If ($result.mssmsrangediphigh -match '-') {
+                $high = $maxInt - $temp.mssmsrangediphigh
+            }
+            Else {
+                $high = $temp.mssmsrangediphigh
+            }
             $boundaryTable.Add([PsCustomObject]@{
                 Name     = $temp.name
                 SiteCode = $temp.mssmssitecode
-                Start    = $temp.mssmsrangediplow
-                End      = $temp.mssmsrangediphigh
+                Start    = $low
+                End      = $high
             }) | Out-Null
         }
     }
