@@ -278,16 +278,16 @@ Function Get-SMSBoundaryInformation {
     
     If ($objType -eq "DictionaryBase") {
         If ($result.mssmsrangediplow -match '-') {
-            $low = $maxInt - [int]$result.mssmsrangediplow
+            $low = $maxInt - [int]($result.mssmsrangediplow | Out-String)
         }
         Else {
-            $low = [int]$result.mssmsrangediplow
+            $low = [int]($result.mssmsrangediplow | Out-String)
         }
         If ($result.mssmsrangediphigh -match '-') {
-            $high = $maxInt - [int]$result.mssmsrangediphigh
+            $high = $maxInt - [int]($result.mssmsrangediphigh | Out-String)
         }
         Else {
-            $high = [int]$result.mssmsrangediphigh
+            $high = [int]($result.mssmsrangediphigh | Out-String)
         }
         $boundaryTable.Add([PsCustomObject]@{
             Name     = $result.name
@@ -300,16 +300,16 @@ Function Get-SMSBoundaryInformation {
         For ($i=0;$i -lt $result.Count;$i++) {
             $temp = $result[$i]
             If ($result.mssmsrangediplow -match '-') {
-                $low = $maxInt - [int]$temp.mssmsrangediplow
+                $low = $maxInt - [int]($temp.mssmsrangediplow | Out-String)
             }
             Else {
-                $low = [int]$temp.mssmsrangediplow
+                $low = [int]($temp.mssmsrangediplow | Out-String)
             }
             If ($result.mssmsrangediphigh -match '-') {
-                $high = $maxInt - [int]$temp.mssmsrangediphigh
+                $high = $maxInt - [int]($temp.mssmsrangediphigh | Out-String)
             }
             Else {
-                $high = [int]$temp.mssmsrangediphigh
+                $high = [int]($temp.mssmsrangediphigh | Out-String)
             }
             $boundaryTable.Add([PsCustomObject]@{
                 Name     = $temp.name
