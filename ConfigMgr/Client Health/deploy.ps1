@@ -269,15 +269,28 @@ Function Get-SMSBoundaryInformation {
 
     # Convert the results into a more manageable table
     $boundaryTable = [System.Collections.ArrayList]::new()
-
-    For ($i=0;$i -lt $result.Count;$i++) {
-        $temp = $result[$i]
+    
+    # Is there more than one boundary range?
+    $objType = $result.GetType().BaseType.Name
+    
+    If ($objType -eq "DictionaryBase") {
         $boundaryTable.Add([PsCustomObject]@{
-            Name     = $temp.name
-            SiteCode = $temp.mssmssitecode
-            Start    = $temp.mssmsrangediplow
-            End      = $temp.mssmsrangediphigh
+            Name     = $result.name
+            SiteCode = $result.mssmssitecode
+            Start    = $result.mssmsrangediplow
+            End      = $result.mssmsrangediphigh
         }) | Out-Null
+    }
+    Else {
+        For ($i=0;$i -lt $result.Count;$i++) {
+            $temp = $result[$i]
+            $boundaryTable.Add([PsCustomObject]@{
+                Name     = $temp.name
+                SiteCode = $temp.mssmssitecode
+                Start    = $temp.mssmsrangediplow
+                End      = $temp.mssmsrangediphigh
+            }) | Out-Null
+        }
     }
 
     # Finally, do a quick lookup of where the IP would live
