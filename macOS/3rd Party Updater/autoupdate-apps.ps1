@@ -32,7 +32,7 @@ Function Get-InstalledVersion () {
 	Param ($AppPath,$SearchString)
 
 	If (Test-Path -Path $AppPath) {
-		$Version = /usr/libexec/PlistBuddy -c "Print $SearchString" "$AppPath"
+		$Version = /usr/libexec/PlistBuddy -c "Print $SearchString" "$AppPath/Contents/Info.plist"
     }
     Else {
         $Version = "Unknown"
@@ -51,7 +51,6 @@ Function Get-InstallPackage {
 		Write-Host "$AppName was already downloaded"
 	}
 	Else {
-		#Start-Process /usr/bin/curl -ArgumentList "-sJL $DownloadUrl -o $Package" -Wait
         Invoke-WebRequest -Uri $DownloadUrl -OutFile $Package
 	}
 	
@@ -88,6 +87,11 @@ Function Set-InstallPackage {
 }
 
 # Pre-Main Area
+# Check if Tls is setup
+If ([System.Net.ServicePointManager]::SecurityProtocol -notmatch "Tls") {
+    [System.Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+}
+
 # Figure out which apps are installed on the machine before collecting information
 ForEach ($App in $AppList) {
 
@@ -145,7 +149,7 @@ If ("Chrome" -in $InstalledApps.AppName) {
 # Cyberduck
 If ("Cyberduck" -in $InstalledApps.AppName) {
     $url = "https://cyberduck.io/download/"
-    $page = Invoke-WebRequest -Uri $url -UseBasicParsing
+    $page = Invoke-WebRequest -Uri $url -UseBasicParsing -SkipHttpErrorCheck -SkipCertificateCheck
     $download = ($page.Links | Where-Object {$_ -match "zip"}).href
     $version = ($download -Replace "[^0-9\.]").Trim(".")
     ($InstalledApps | Where-Object {$_.AppName -match "Cyberduck"}).Version = $version
@@ -215,7 +219,7 @@ If ("PowerShell" -in $InstalledApps.AppName) {
 # Slack
 If ("Slack" -in $InstalledApps.AppName) {
     $url = "https://slack.com/ssb/download-osx-universal"
-    $page = Invoke-WebRequest -Uri $url -MaximumRedirection 0 -SkipHttpErrorCheck -ErrorAction SilentlyContinue
+    $page = Invoke-WebRequest -Uri $url -MaximumRedirection 0 -SkipHttpErrorCheck -SkipCertificateCheck -ErrorAction SilentlyContinue
     $download = $url
     $version = ($page.Headers.Location | Select-String -pattern "((\d+\.){1,}[0-9]+)").Matches.Value
     ($InstalledApps | Where-Object {$_.AppName -match "Slack"}).Version = $version
@@ -226,7 +230,7 @@ If ("Slack" -in $InstalledApps.AppName) {
 # Zoom
 If ("zoom" -in $InstalledApps.AppName) {
     $url = "https://zoom.us/client/latest/ZoomInstallerIT.pkg"
-    $page = Invoke-WebRequest -Uri $url -MaximumRedirection 0 -SkipHttpErrorCheck -ErrorAction SilentlyContinue
+    $page = Invoke-WebRequest -Uri $url -MaximumRedirection 0 -SkipHttpErrorCheck -SkipCertificateCheck -ErrorAction SilentlyContinue
     $download = $url
     $version = ($page.Headers.Location | Select-String -pattern "((\d+\.){1,}[0-9]+)").Matches.Value
     ($InstalledApps | Where-Object {$_.AppName -match "zoom"}).Version = $version
@@ -251,7 +255,7 @@ ForEach ($App in $InstalledApps) {
         Write-Output "Will try to install latest..."
         Write-Output "#############################"
     }
-    ElseIf (($InstalledVersion -Replace "\.") -eq ($AppVersion -Replace "\.")) {
+    ElseIf (($InstalledVersion -Replace "[\s\.()]") -eq ($AppVersion -Replace "\.")) {
         Write-Output "$AppName is already up-to-date"
         Write-Output "#############################"
         Continue
