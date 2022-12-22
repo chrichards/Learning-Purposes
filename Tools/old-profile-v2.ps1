@@ -58,7 +58,7 @@ $localProfiles = get-wmiobject -class win32_UserProfile -filter "Special=$false"
 # get info on user's that have accessed the system
 # info is generated based on user profile events
 $userAccessInfo = @()
-$data = get-winevent -filterhashtable @{LogName = 'Microsoft-Windows-User Profile Service/Operational'; Id = '67'}
+$data = get-winevent -filterhashtable @{LogName = 'Microsoft-Windows-User Profile Service/Operational'; Id = '67'} | where {$_.Properties[1].Value -notlike "$env:windir\ServiceProfiles*"}
 
 foreach ($datum in $data) {
 
@@ -221,6 +221,9 @@ if ($moreInfoRequired) {
     }
 
 }
+
+# just to be safe!
+$userAccessInfo = $userAccessInfo | where {$_.Path -notlike "$env:windir\ServiceProfiles*"}
 
 # begin the removal process
 # this is a best-effort process, so it could potentially fail
