@@ -1,5 +1,5 @@
 #!/bin/sh
-# Version 6.01
+# Version 6.06
 
 ##############################################
 # VARIABLES
@@ -482,6 +482,7 @@ OSFriendlyName=$(cat "$License" | grep -i "macOS" | head -1 | awk -F 'macOS ' '{
 
 # Turn the information into something a little bit more manageable
 AvailableUpdates=($(echo "$Updates" | grep -i "Label" -A1 | awk '{$1=$1};1' | sed -e N -e 's/\n/, /g' -e 's/\* //g' -e 's/: /=/g' -e 's/, /,/g'))
+Arrays=()
 RequiredUpdates=()
 UpdatesByName=()
 UpdatesWithRestart=()
@@ -509,14 +510,18 @@ done
 
 # Go through the update arrays and sort them/decide if they should be installed
 for ((i=0; i<${#AvailableUpdates[@]}; i++)); do
+	# Variable substitution to access the array
+	Temp="Update$i"[@]
+	Temp=( "${!Temp}" )
 	# If the update doesn't match the current OS, we skip
-	if [[ ${Update$i[1]} =~ "macOS" ]]; then
-		if [[ ${Update$i[1]} =~ $OSFriendlyName ]]; then
+	if [[ ${Temp[1]} =~ "macOS" ]]; then
+		if [[ ${Temp[1]} =~ $OSFriendlyName ]]; then
 			# Check if the update is being skipped
 			# If the update is in the array, it won't be added
-			if [[ "${Update$i[2]}" =~ "${UpdateSkip[*]}" ]]; then
+			if [[ "${Temp[2]}" =~ "${UpdateSkip[*]}" ]]; then
 				# Make sure to turn off auto-updates
 				# We don't want this update installing!
+				Write_Log "Update ${Temp[2]} is currently being blocked. This update will be skipped."
 				for Config in "${PreferredConfigs[@]}"; do
 					Check=$(/usr/libexec/PlistBuddy -c "Print :$Config" $SoftwareUpdatePlist 2>&1)
 					
@@ -527,25 +532,25 @@ for ((i=0; i<${#AvailableUpdates[@]}; i++)); do
 				done
 			else
 				# Add it to the pile!
-				RequiredUpdates+=("${Update$i[0]}")
-				UpdatesByName+=("${Update$i[1]}")
+				RequiredUpdates+=("${Temp[0]}")
+				UpdatesByName+=("${Temp[1]}")
 			fi
 			# Check if the update requires a restart
-			if [[ "${Update$i[3]" =~ "restart" ]]; then
-				UpdatesWithRestart+=("${Update$i[0]}")
+			if [[ "${Temp[3]}" =~ "restart" ]]; then
+				UpdatesWithRestart+=("${Temp[0]}")
 			else
-				UpdatesWithNoRestart+=("${Update$i[0]}")
+				UpdatesWithNoRestart+=("${Temp[0]}")
 			fi
 		fi
 	# For all other updates, there's MasterCard	
 	else
-		RequiredUpdates+=("${Update$i[0]}")
-		UpdatesByName+=("${Update$i[1]}")
+		RequiredUpdates+=("${Temp[0]}")
+		UpdatesByName+=("${Temp[1]}")
 		# Check if the update requires a restart
-		if [[ "${Update$i[3]" =~ "restart" ]]; then
-			UpdatesWithRestart+=("${Update$i[0]}")
+		if [[ "${Temp[3]}" =~ "restart" ]]; then
+			UpdatesWithRestart+=("${Temp[0]}")
 		else
-			UpdatesWithNoRestart+=("${Update$i[0]}")
+			UpdatesWithNoRestart+=("${Temp[0]}")
 		fi
 	fi
 done
