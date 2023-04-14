@@ -1,4 +1,5 @@
 #!/bin/bash
+# Version 3.16
 
 # Variables
 TargetName="$4"
@@ -20,26 +21,51 @@ DownloadOS() {
 
 	if [[ -n $1 ]]; then
 		echo "OS Download: OK - Using softwareupdate to get version $1 of macOS."
-		softwareupdate --fetch-full-installer --full-installer-version $1 &> /private/tmp/macOS-upgrade.log
-		# Line for reporting
-		echo "-------------------------"
-		if [[ $? = 0 ]]; then
-			echo "OS Download: OK - softwareupdate ran successfully."
-		else
-			echo "OS Download: ERROR - softwareupdate was unable to complete properly."
-			exit 1
-		fi
+		softwareupdate --fetch-full-installer --full-installer-version $1 &> /private/tmp/macOS-upgrade.log &
+		DownloaderPID=$!
 	else
 		echo "OS Download: OK - Using softwareupdate to get the latest version of macOS."
-		softwareupdate --fetch-full-installer &> /private/tmp/macOS-upgrade.log
-		# Line for reporting
-		echo "-------------------------"
-		if [[ $? = 0 ]]; then
-			echo "OS Download: OK - softwareupdate ran successfully."
-		else
-			echo "OS Download: ERROR - softwareupdate was unable to complete properly."
-			exit 1
+		softwareupdate --fetch-full-installer &> /private/tmp/macOS-upgrade.log &
+		DownloaderPID=$!
+	fi
+		
+	# Notification area so the user knows what's happening
+	Displayed=""
+	Message="Downloading the new OS - this may take a while"
+	Title="Download Progress"
+	/usr/bin/osascript -e 'display notification "'"$Message"'" with title "'"$Title"'"'
+	
+	while (ps ax | grep $DownloaderPID | grep -v grep) &> /dev/null; do
+		ReadFile=$(cat /private/tmp/macOS-upgrade.log)
+		if [[ "$ReadFile" =~ "Installing" ]]; then
+			# I have NO idea why all the percentages dogpile on each other but this
+			# is what needs to be done to pull them apart and get the ACTUAL last line
+			Percent=$(echo "$ReadFile" | tail -1 | tr '[:space:]' '\n' | tail -1)
+			Number=$(echo "$Percent" | cut -d"." -f1)
+			
+			if ((Number%3)); then
+				# there's a remainder if divided by 5 so we'll skip
+				continue
+			else
+				if [[ "$Number" == "$Displayed" ]]; then
+					# we've already displayed this message so no need to show again
+					continue
+				else
+					Message="Download $Percent complete"
+					/usr/bin/osascript -e 'display notification "'"$Message"'" with title "'"$Title"'"'
+					Displayed=$Number
+				fi
+			fi
 		fi
+		sleep 1
+	done
+
+	wait $DownloaderPID
+	if [[ $? = 0 ]]; then
+		echo "OS Download: OK - softwareupdate ran successfully."
+	else
+		echo "OS Download: ERROR - softwareupdate was unable to complete properly."
+		exit 1
 	fi
 	
 }
@@ -92,11 +118,11 @@ Interpret_Input() {
 	case $Interpreter in
 		1)
 			Input=$2
-			Result=$(echo "$Input" | openssl enc -k "$(echo $Combo)" -aes256 -base64 -e)
+			Result=$(echo "$Input" | openssl enc -k "$(echo $Combo)" -md md5 -aes256 -base64 -e)
 			;;
 		2)
 			Input=$(cat "$2")
-			Result=$(echo "$Input" | openssl enc -k "$(echo $Combo)" -aes256 -base64 -d)
+			Result=$(echo "$Input" | openssl enc -k "$(echo $Combo)" -md md5 -aes256 -base64 -d)
 			;;
 	esac
 	
@@ -296,13 +322,26 @@ OSInstaller=$(find /Applications -iname "Install macOS*" -maxdepth 1)
 # There are no Install macOS apps in /Applications
 if [[ -z "$OSInstaller" ]]; then
 	DownloadOS $TargetVersion
+	if [ -d "/Applications/Install $TargetName.app" ]; then
+		echo "Installer Status: OK - $TargetName is ready to be installed."
+		Installer="/Applications/Install $TargetName.app"
+	else
+		echo "Installer Status: ERROR - Unable to get $TargetName."
+		exit 1
+	fi
 else
 	# There's at least one installer to review
-	for Installer in $OSInstaller; do
+	for Installer in ${OSInstaller[@]}; do
 		echo "Installer Status: INFO - Checking $Installer"
 		InstallerInfoPlist=$(find $Installer -name "*Info*.plist" -maxdepth 2)
 		InstallerName=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' "$InstallerInfoPlist")
-		InstallerVersion=$(/usr/libexec/PlistBuddy -c 'Print :DTPlatformVersion' "$InstallerInfoPlist")
+		
+		# To make sure we have the correct version, we've gotta go hunting WAY deep download
+		# Open the Installer, attach a dmg, and then parse an xml; thanks, Apple!
+		/usr/bin/hdiutil attach -noverify -quiet "$Installer/Contents/SharedSupport/SharedSupport.dmg"
+		InstallerVersion=$(/usr/libexec/PlistBuddy -c 'Print :Assets:0:OSVersion' "/Volumes/Shared Support/com_apple_MobileAsset_MacSoftwareUpdate/com_apple_MobileAsset_MacSoftwareUpdate.xml")
+		/usr/bin/hdiutil detach -quiet "Volumes/Shared Support/"
+		
 		if [[ "$InstallerName" =~ "$TargetName" ]]; then
 			if [[ "$InstallerVersion" == "$TargetVersion" ]]; then
 				echo "Installer Status: OK - Reported version $InstallVersion matches the targeted version."
@@ -321,8 +360,6 @@ else
 	# If all of the installers are stale
 	if [[ -z "$Installer" ]]; then
 		echo "Installer Status: WARN - System does not have the required macOS installer."
-		# Line for reporting
-		echo "-------------------------"
 		DownloadOS $TargetVersion
 		if [ -d "/Applications/Install $TargetName.app" ]; then
 			echo "Installer Status: OK - $TargetName is ready to be installed."
@@ -383,6 +420,12 @@ done
 
 # User notification variables
 InstallIcon="$Installer/Contents/Resources/InstallAssistant.icns"
+echo "Installer Start: INFO - Checking for $InstallIcon"
+if [ -f "$InstallIcon" ]; then
+	echo "Installer Start: INFO - Icon exists."
+else
+	echo "Installer Start: INFO - No icon available!"
+fi
 Title="$TargetName Upgrade"
 Heading="Please wait while we prepare your computer for $TargetName"
 Description="Beginning the upgrade for $TargetName. Your computer will reboot
