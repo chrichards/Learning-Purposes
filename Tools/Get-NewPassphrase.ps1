@@ -57,7 +57,7 @@ function Get-NewPassphrase {
             if ($Count -eq 1) {
                 $Passphrase[-1] = "$($Passphrase[-1])$(&$Punctuation)"
             } else {
-                $Positions = Get-Random -Count $Count -InputObject (1..$WordCount)
+                $Positions = Get-Random -Count $Count -InputObject (0..($WordCount-1))
                 foreach ($Position in $Positions) {
                     $Passphrase[$Position] = "$($Passphrase[$Position])$(&$Punctuation)"
                 }
