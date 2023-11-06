@@ -1,4 +1,4 @@
-function Create-Zip {
+function New-ZipArchive {
     Param (
         [Parameter(Mandatory=$true)]
         $Source,
@@ -20,14 +20,14 @@ function Create-Zip {
         $CompressionLevel = [System.IO.Compression.CompressionLevel]::$CompressionType
 
         # Set the zip write method type
-        $Update = [System.IO.Compression.ZipArchiveMode]::Update
+        $Mode = [System.IO.Compression.ZipArchiveMode]::Create
 
         $n = 0
     }
 
     process {
         # Create the base zip archive
-        [System.IO.Compression.ZipArchive]$Archive = [System.IO.Compression.ZipFile]::Open($Destination,$Update)
+        [System.IO.Compression.ZipArchive]$Archive = [System.IO.Compression.ZipFile]::Open($Destination,$Mode)
 
         while (-not(Test-Path $Destination)) {
             Start-Sleep -Milliseconds 50
@@ -63,6 +63,7 @@ function Create-Zip {
             $ChildCount = $Children.Count
             $i = 0
             foreach ($Child in $Children){
+                # NOTE: Use the string literal method .Replace to avoid potential regex problems in names
                 # Child progress update
                 $ChildProgress = @{
                     Activity         = 'Adding item to archive'
@@ -74,7 +75,7 @@ function Create-Zip {
 
                 if ($Child.PSIsContainer){
                     # make a name that honors file structure
-                    $ChildPath = $Child.FullName -Replace [Regex]::Escape("$Item\")
+                    $ChildPath = $($Child.FullName).Replace("$Item\","")
                     if ($ChildPath) {
                         $Name = $ChildPath
                     } else {
@@ -85,7 +86,7 @@ function Create-Zip {
                     [void]$Archive.CreateEntry("$Name\")
                 } else {
                     # figure out where in the structure the file should reside
-                    $ChildPath = $Child.FullName -Replace [Regex]::Escape("$Item\") -Replace "$($Child.Name)"
+                    $ChildPath = $($Child.FullName).Replace("$Item\","").Replace("$($Child.Name)","")
                     if ($ChildPath -match '\\') {
                         # at least one subdirectory exists
                         $Name = $ChildPath + $Child.Name
