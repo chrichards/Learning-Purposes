@@ -8,7 +8,13 @@ function Get-NewPassphrase {
         [int]$WordCount = 3,
 
         [Parameter()]
-        [switch]$AddPunctuation
+        [switch]$AddPunctuation,
+
+        [Parameter()]
+        [switch]$AddTrailingNumbers,
+
+        [Parameter()]
+        [switch]$AddNeedlessComplexity
     )
 
     begin {
@@ -66,6 +72,17 @@ function Get-NewPassphrase {
         
         # Assemble the passphrase so it's a "sentence" and not an array
         $Passphrase = $Passphrase -Join " "
+
+        # Because sometimes, password policies are dumb
+        if ($AddNeedlessComplexity) {
+            $Passphrase = $Passphrase -Replace "[aA]","@" -Replace "[eE]","3" -Replace "[gG]","&" `
+                -Replace "[oO]","0" -Replace "[sS]","$" -Replace "[tT]","7"
+        }
+
+        if ($AddTrailingNumbers) {
+            $Number = Get-Random -Minimum 1000 -Maximum 99999
+            $Passphrase = $Passphrase + $Number
+        }
     }
 
     end {
