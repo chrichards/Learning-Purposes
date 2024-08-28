@@ -1,0 +1,26 @@
+function Test-OnPremAuth {
+    param (
+        [Parameter(Mandatory=$true)]
+        [PsCredential]$Credential
+    )
+
+    # Checking module
+    try {
+        # Split username and password
+        $Username = $Credential.username
+        $Password = $Credential.GetNetworkCredential().password
+  
+        # Get Domain
+        $Root = "LDAP://" + ([ADSI]'').distinguishedName
+        $Domain = New-Object System.DirectoryServices.DirectoryEntry($Root,$UserName,$Password)
+    } catch {
+        $_.Exception.Message
+    }
+
+    if ($Domain.Name) {
+        return $true
+    } else {
+        return $false
+    }
+
+}
