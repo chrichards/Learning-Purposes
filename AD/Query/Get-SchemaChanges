@@ -1,0 +1,4 @@
+$schema = Get-ADObject -SearchBase ((Get-ADRootDSE).schemaNamingContext)-SearchScope OneLevel -Filter * -Properties objectClass, name, whenChanged, whenCreated | 
+Select-Object objectClass, name, whenChanged, whenCreated, @{name='Event';expression={($_.whenCreated).Date.ToShortDateString()}} | Sort-Object -Property whenCreated
+
+$schema | Format-Table objectClass, name, whenChanged, whenCreated -groupby Event -autosize
