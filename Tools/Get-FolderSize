@@ -1,0 +1,45 @@
+function Get-FolderSize {
+    [cmdletbinding()]
+    param (
+        [Parameter(
+                Mandatory=$true,
+                Position=0,
+                ValueFromPipeline=$true,
+                ValueFromPipelineByPropertyName=$true
+        )]
+        [ValidateNotNullOrEmpty()]
+        [Alias('Path','FullName')]
+        [string]$FilePath
+    )
+
+    begin {
+        # Option details from https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/robocopy
+        $options = @(
+            "/BYTES", # Prints sizes as bytes.
+            "/L",     # Specifies that files are to be listed only (and not copied, deleted, or time stamped).
+            "/S",     # Copies subdirectories. This option automatically excludes empty directories.
+            "/NC",    # Specifies that file classes aren't to be logged.
+            "/NDL",   # Specifies that directory names aren't to be logged.
+            "/NFL",   # Specifies that file names aren't to be logged.
+            "/NJH",   # Specifies that there's no job header.
+            "/NP",    # Specifies to not display the progress of the copying operation (the number of files or directories copied so far).
+            "/XJ",    # Excludes junction points, which are normally included by default.
+            "/R:0",   # Specifies the number of retries on failed copies.
+            "/W:0"    # Specifies the wait time between retries, in seconds.
+        )
+    }
+
+    process {
+        $output = robocopy "$FilePath" NULL $options
+        $dirs   = ($output.Where{$_ -match "Dirs"} -Split "\s+")[3]
+        $files  = ($output.Where{$_ -match "Files"} -Split "\s+")[3]
+        $size   = ($output.Where{$_ -match "Bytes"} -Split "\s+")[3]
+
+        [PsCustomObject]@{
+            'Name' = $FilePath
+            'TotalFolderSize(GB)' = [math]::Round($size / 1073741824, 2)
+            'TotalChildFolders'   = $dirs
+            'TotalChildFiles'     = $files
+        }
+    }
+}
